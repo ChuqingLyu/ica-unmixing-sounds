@@ -277,7 +277,9 @@ var EXAMPLE_CLIPS = [
   root.ICA = ICA;
 
   // ============================ Browser UI ============================
-  var ACCENT = '#1f3a5f';
+  // "Sound lab" look: every source keeps one signature color everywhere on the page.
+  var COLORS = { kitchen: '#ffb347', hall: '#3fd0c9', classroom: '#ff6fae', mix: '#c9d1dc' };
+  var PLOT_BG = '#080c13';
   var PLACE_NAMES = { kitchen: 'the kitchen', hall: 'the hall', classroom: 'a classroom' };
   var MICS = ['Mic by the door', 'Mic by the window', 'Mic at the back'];
   var reduceMotion = !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -285,10 +287,20 @@ var EXAMPLE_CLIPS = [
   var clips = [];          // all loaded clips: { id, label, place, src, kind: 'example' | 'kids', x: Float64Array }
   var demoClips = [];      // the three used in the full demo
   var sources = null, A = DEFAULT_MIX.map(function (r) { return r.slice(); }), mixtures = null;
-  var audioCtx = null, playing = null, playingBtn = null;
+  var audioCtx = null, playing = null, playingBtn = null, live = null, lastOutputs = null;
 
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  // ---------- colors ----------
+  function colorOf(clip) { return (clip && COLORS[clip.place]) || COLORS.mix; }
+  function hexRgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function blend(h1, h2, u) {
+    var a = hexRgb(h1), b = hexRgb(h2);
+    return '#' + [0, 1, 2].map(function (k) { var v = Math.round(a[k] + (b[k] - a[k]) * u); return (v < 16 ? '0' : '') + v.toString(16); }).join('');
+  }
+  function rgba(h, al) { var a = hexRgb(h); return 'rgba(' + a[0] + ',' + a[1] + ',' + a[2] + ',' + al + ')'; }
+  function isHex(s) { return /^#[0-9a-f]{6}$/i.test(s); }
 
   // ---------- loading sounds ----------
   function resample(x, from, to) {
@@ -341,34 +353,159 @@ var EXAMPLE_CLIPS = [
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     var c = canvas.getContext('2d');
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { c: c, w: w, h: h };
+    return { c: c, w: w, h: h, dpr: dpr };
   }
 
-  function drawWave(canvas, x) {
-    var g = setupCanvas(canvas, 64), c = g.c, w = g.w, h = g.h;
-    c.fillStyle = '#f6f7f9'; c.fillRect(0, 0, w, h);
-    c.strokeStyle = '#dde1e6'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(0, h / 2 + 0.5); c.lineTo(w, h / 2 + 0.5); c.stroke();
-    if (!x) return;
-    var peak = 0, i;
-    for (i = 0; i < x.length; i++) peak = Math.max(peak, Math.abs(x[i]));
-    if (peak === 0) return;
-    var scale = (h / 2 - 3) / peak, per = x.length / w;
-    c.strokeStyle = ACCENT; c.beginPath();
-    for (var px = 0; px < w; px++) {
-      var a = Math.floor(px * per), b = Math.min(x.length, Math.floor((px + 1) * per));
-      var lo = Infinity, hi = -Infinity;
-      for (i = a; i < b; i++) { if (x[i] < lo) lo = x[i]; if (x[i] > hi) hi = x[i]; }
-      if (lo === Infinity) continue;
-      c.moveTo(px + 0.5, h / 2 - hi * scale); c.lineTo(px + 0.5, h / 2 - lo * scale + 0.01);
-    }
+  // Oscilloscope graticule: faint divisions, a brighter center line with small ticks.
+  function graticule(c, x0, y0, w, h, nx, ny, both) {
+    var i, x, y;
+    c.save(); c.lineWidth = 1;
+    c.strokeStyle = 'rgba(120,150,190,0.08)'; c.beginPath();
+    for (i = 1; i < nx; i++) { x = Math.round(x0 + w * i / nx) + 0.5; c.moveTo(x, y0); c.lineTo(x, y0 + h); }
+    for (i = 1; i < ny; i++) { y = Math.round(y0 + h * i / ny) + 0.5; c.moveTo(x0, y); c.lineTo(x0 + w, y); }
     c.stroke();
+    c.strokeStyle = 'rgba(150,175,210,0.20)'; c.beginPath();
+    var cy = Math.round(y0 + h / 2) + 0.5, cx = Math.round(x0 + w / 2) + 0.5, tk = w / (nx * 5);
+    c.moveTo(x0, cy); c.lineTo(x0 + w, cy);
+    for (x = x0; x <= x0 + w; x += tk) { c.moveTo(Math.round(x) + 0.5, cy - 2); c.lineTo(Math.round(x) + 0.5, cy + 2); }
+    if (both) {
+      var tv = h / (ny * 5);
+      c.moveTo(cx, y0); c.lineTo(cx, y0 + h);
+      for (y = y0; y <= y0 + h; y += tv) { c.moveTo(cx - 2, Math.round(y) + 0.5); c.lineTo(cx + 2, Math.round(y) + 0.5); }
+    }
+    c.stroke(); c.restore();
+  }
+  function glowStroke(c, color, width, blur) {
+    c.save();
+    c.strokeStyle = rgba(color, 0.22); c.lineWidth = (width || 1.4) * 3.2; c.lineJoin = 'round'; c.stroke();
+    c.shadowColor = color; c.shadowBlur = blur == null ? 10 : blur;
+    c.strokeStyle = color; c.lineWidth = width || 1.4; c.stroke();
+    c.restore();
   }
 
-  // ---------- playback ----------
+  function drawWave(canvas, x, color) {
+    color = isHex(color || '') ? color : COLORS.mix;
+    var g = setupCanvas(canvas, 72), c = g.c, w = g.w, h = g.h;
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h);
+    graticule(c, 0, 0, w, h, 18, 4);
+    if (x) {
+      var peak = 0, i;
+      for (i = 0; i < x.length; i++) peak = Math.max(peak, Math.abs(x[i]));
+      if (peak > 0) {
+        var scale = (h / 2 - 4) / peak, per = x.length / w, hi = [], lo = [], px;
+        for (px = 0; px < w; px++) {
+          var a = Math.floor(px * per), b = Math.min(x.length, Math.floor((px + 1) * per));
+          var l = Infinity, u = -Infinity;
+          for (i = a; i < b; i++) { if (x[i] < l) l = x[i]; if (x[i] > u) u = x[i]; }
+          if (l === Infinity) { l = 0; u = 0; }
+          hi.push(h / 2 - u * scale); lo.push(h / 2 - l * scale + 0.6);
+        }
+        var grad = c.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, rgba(color, 0.55)); grad.addColorStop(0.5, rgba(color, 0.95)); grad.addColorStop(1, rgba(color, 0.55));
+        c.save(); c.shadowColor = color; c.shadowBlur = 9; c.fillStyle = grad;
+        c.beginPath(); c.moveTo(0, hi[0]);
+        for (px = 1; px < w; px++) c.lineTo(px + 0.5, hi[px]);
+        for (px = w - 1; px >= 0; px--) c.lineTo(px + 0.5, lo[px]);
+        c.closePath(); c.fill(); c.restore();
+      }
+    }
+    // keep a copy so the playhead can be drawn on top without redrawing the waveform
+    var base = canvas._base || document.createElement('canvas');
+    base.width = canvas.width; base.height = canvas.height;
+    base.getContext('2d').drawImage(canvas, 0, 0);
+    canvas._base = base; canvas._color = color; canvas._x = x;
+  }
+  function drawPlayhead(canvas, frac) {
+    if (!canvas || !canvas._base) return;
+    var c = canvas.getContext('2d'), dpr = canvas.width / (canvas.clientWidth || canvas.width);
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, 0, canvas.width, canvas.height);
+    c.drawImage(canvas._base, 0, 0);
+    if (frac != null) {
+      var X = Math.max(0, Math.min(1, frac)) * canvas.width, col = canvas._color || COLORS.mix;
+      c.fillStyle = 'rgba(8,12,19,0.45)'; c.fillRect(X, 0, canvas.width - X, canvas.height);   // not yet played = dimmer
+      c.fillStyle = rgba(col, 0.10); c.fillRect(0, 0, X, canvas.height);
+      c.shadowColor = '#ffffff'; c.shadowBlur = 10 * dpr;
+      c.fillStyle = '#ffffff'; c.fillRect(Math.round(X) - dpr, 0, 2 * dpr, canvas.height);
+    }
+    c.restore();
+  }
+
+  // ---------- playback, with a live oscilloscope + spectrum ----------
+  function stopLive() {
+    if (!live) return;
+    if (live.raf) cancelAnimationFrame(live.raf);
+    if (live.el.parentNode) live.el.parentNode.removeChild(live.el);
+    if (live.wave) drawPlayhead(live.wave, null);
+    live = null;
+  }
   function stopPlaying() {
     if (playing) { try { playing.stop(); } catch (e) {} playing = null; }
-    if (playingBtn) { playingBtn.textContent = playingBtn.dataset.label || 'Play'; playingBtn = null; }
+    if (playingBtn) { playingBtn.textContent = playingBtn.dataset.label || 'Play'; playingBtn.classList.remove('is-playing'); playingBtn = null; }
+    stopLive();
+  }
+  function startLive(btn, an, dur) {
+    var color = (root.getComputedStyle(btn).getPropertyValue('--c') || '').trim();
+    if (!isHex(color)) color = COLORS.mix;
+    var el = document.createElement('div');
+    el.className = 'live'; el.style.setProperty('--c', color); el.setAttribute('aria-hidden', 'true');
+    el.innerHTML = '<span class="live-tag">LIVE <span class="live-time">0.0 s</span></span>' +
+      '<canvas class="live-scope"></canvas><canvas class="live-spec"></canvas>';
+    var track = btn.closest('.track'), fig = btn.closest('figure'), ctl = btn.closest('.controls');
+    if (track) track.appendChild(el);
+    else if (fig) fig.appendChild(el);
+    else if (ctl) ctl.parentNode.insertBefore(el, ctl.nextSibling);
+    else btn.parentNode.appendChild(el);
+    live = { el: el, an: an, color: color, dur: dur, t0: audioCtx.currentTime, wave: track ? track.querySelector('canvas.wave') : null,
+             td: new Uint8Array(an.fftSize), fd: new Uint8Array(an.frequencyBinCount), time: el.querySelector('.live-time') };
+    liveSize();
+    live.raf = requestAnimationFrame(liveFrame);
+  }
+  function liveSize() {
+    if (!live) return;
+    live.sc = setupCanvas(live.el.querySelector('.live-scope'), 64);
+    live.sp = setupCanvas(live.el.querySelector('.live-spec'), 64);
+  }
+  function liveFrame() {
+    if (!live) return;
+    var L = live, i, k, c, w, h;
+    // oscilloscope (triggered on a rising zero crossing so the trace holds still)
+    L.an.getByteTimeDomainData(L.td);
+    c = L.sc.c; w = L.sc.w; h = L.sc.h;
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h);
+    graticule(c, 0, 0, w, h, 10, 4);
+    var start = 0, half = L.td.length >> 1;
+    for (i = 1; i < half; i++) if (L.td[i - 1] < 128 && L.td[i] >= 128) { start = i; break; }
+    var span = Math.min(1024, L.td.length - start), pk = 0;
+    for (k = 0; k < span; k++) pk = Math.max(pk, Math.abs(L.td[start + k] - 128));
+    var gain = Math.min(5, 0.85 / Math.max(pk / 128, 0.02));   // auto-scale, like a scope's auto mode
+    c.beginPath();
+    for (k = 0; k < span; k++) {
+      var v = (L.td[start + k] - 128) / 128 * gain;
+      v = Math.max(-1, Math.min(1, v));
+      var X = k / (span - 1) * w, Y = h / 2 - v * (h / 2 - 3);
+      if (k) c.lineTo(X, Y); else c.moveTo(X, Y);
+    }
+    glowStroke(c, L.color, 1.4, 8);
+    // spectrum: 22 log-spaced bars, 50 Hz to 8 kHz
+    L.an.getByteFrequencyData(L.fd);
+    c = L.sp.c; w = L.sp.w; h = L.sp.h;
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h);
+    var bars = 22, nyq = audioCtx.sampleRate / 2, bw = w / bars;
+    c.save(); c.shadowColor = L.color; c.shadowBlur = 6;
+    for (k = 0; k < bars; k++) {
+      var f0 = 50 * Math.pow(160, k / bars), f1 = 50 * Math.pow(160, (k + 1) / bars);
+      var b0 = Math.floor(f0 / nyq * L.fd.length), b1 = Math.max(b0 + 1, Math.floor(f1 / nyq * L.fd.length)), m = 0;
+      for (i = b0; i < b1 && i < L.fd.length; i++) m = Math.max(m, L.fd[i]);
+      var lv = Math.pow(m / 255, 1.6), bh = Math.max(1, (h - 4) * lv);
+      c.fillStyle = rgba(L.color, 0.35 + 0.6 * lv);
+      c.fillRect(k * bw + 1, h - bh, Math.max(1, bw - 2), bh);
+    }
+    c.restore();
+    var t = audioCtx.currentTime - L.t0;
+    if (L.wave) drawPlayhead(L.wave, t / L.dur);
+    if (L.time) L.time.textContent = Math.min(t, L.dur).toFixed(1) + ' s / ' + L.dur.toFixed(1) + ' s';
+    L.raf = requestAnimationFrame(liveFrame);
   }
   function play(x, btn) {
     if (btn && playingBtn === btn) { stopPlaying(); return; }   // second click = stop
@@ -383,11 +520,14 @@ var EXAMPLE_CLIPS = [
     var buf = audioCtx.createBuffer(1, y.length, SR);
     if (buf.copyToChannel) buf.copyToChannel(y, 0); else buf.getChannelData(0).set(y);
     var src = audioCtx.createBufferSource();
-    src.buffer = buf; src.connect(audioCtx.destination); src.start();
+    var an = audioCtx.createAnalyser();
+    an.fftSize = 2048; an.smoothingTimeConstant = 0.7; an.minDecibels = -95; an.maxDecibels = -12;
+    src.buffer = buf; src.connect(an); an.connect(audioCtx.destination); src.start();
     playing = src;
     if (btn) {
       btn.dataset.label = btn.dataset.label || btn.textContent;
-      btn.textContent = 'Stop'; playingBtn = btn;
+      btn.textContent = 'Stop'; btn.classList.add('is-playing'); playingBtn = btn;
+      startLive(btn, an, y.length / SR);
     }
     src.onended = function () { if (playing === src) stopPlaying(); };
   }
@@ -395,9 +535,10 @@ var EXAMPLE_CLIPS = [
     btn.addEventListener('click', function () { var x = getSignal(); if (x) play(x, btn); });
   }
 
-  function trackRow(label, id, note) {
+  function trackRow(label, id, note, color) {
     var div = document.createElement('div');
     div.className = 'track';
+    if (color) div.style.setProperty('--c', color);
     div.innerHTML =
       '<div class="track-head"><span class="track-label">' + esc(label) + '</span>' +
       '<button type="button" class="play" id="' + id + '-play">Play</button></div>' +
@@ -425,6 +566,7 @@ var EXAMPLE_CLIPS = [
     { title: 'Turn the dial',
       text: 'Now only one thing is left: which way to turn. Drag the dial. The two lines are the two outputs. When the lines run along the arms of the cross, the independence meter is highest and each output is one clean sound. Listen to the difference.' }
   ];
+  var DOT_BINS = 9;
 
   function sampleIdx(n, k, seed) {   // k random moments (fixed seed so the picture is stable)
     var r = rng(seed), idx = new Uint32Array(k);
@@ -433,6 +575,13 @@ var EXAMPLE_CLIPS = [
   }
   function std(x) { var m = 0, s = 0, t; for (t = 0; t < x.length; t++) m += x[t]; m /= x.length; for (t = 0; t < x.length; t++) s += (x[t] - m) * (x[t] - m); return Math.sqrt(s / x.length) || 1; }
   function rot(theta) { var c = Math.cos(theta), s = Math.sin(theta); return [[c, s], [-s, c]]; }
+
+  function vizColors() {
+    V.colA = colorOf(V.clipList[V.a]); V.colB = colorOf(V.clipList[V.b]);
+    if (V.colB === V.colA) V.colB = blend(V.colA, '#ffffff', 0.55);   // two clips from the same place
+    V.binColors = [];
+    for (var b = 0; b < DOT_BINS; b++) V.binColors.push(blend(V.colA, V.colB, b / (DOT_BINS - 1)));
+  }
 
   function vizCompute() {
     var sa = V.clipList[V.a].x, sb = V.clipList[V.b].x;
@@ -449,10 +598,19 @@ var EXAMPLE_CLIPS = [
     V.frames = [pts(V.S), pts(V.X), pts(V.Xc), pts(V.Z), pts(V.Z)];
     V.views = V.frames.map(function (f, k) { return viewFor(k === 1 ? [V.frames[1], V.frames[2]] : [f]); });
     V.views[2] = V.views[1];   // keep the same zoom while sliding, so the move is visible
+    // color each dot by which sound is louder at that moment (blend of the two source colors)
+    vizColors();
+    V.binIdx = [];
+    for (var b = 0; b < DOT_BINS; b++) V.binIdx.push([]);
+    for (var k = 0; k < V.idx.length; k++) {
+      var ea = Math.abs(s1[V.idx[k]]), eb = Math.abs(s2[V.idx[k]]);
+      V.binIdx[Math.round(eb / (ea + eb || 1) * (DOT_BINS - 1))].push(k);
+    }
     // independence meter for every angle (0.5 degree steps) on 16,000 moments
     var z1 = new Float64Array(V.sub.length), z2 = new Float64Array(V.sub.length);
-    for (t = 0; t < V.sub.length; t++) { z1[t] = V.Z[0][V.sub[t]]; z2[t] = V.Z[1][V.sub[t]]; }
-    V.z1 = z1; V.z2 = z2;
+    var r1 = new Float64Array(V.sub.length), r2 = new Float64Array(V.sub.length);
+    for (t = 0; t < V.sub.length; t++) { z1[t] = V.Z[0][V.sub[t]]; z2[t] = V.Z[1][V.sub[t]]; r1[t] = s1[V.sub[t]]; r2[t] = s2[V.sub[t]]; }
+    V.z1 = z1; V.z2 = z2; V.s1sub = r1; V.s2sub = r2;
     V.table = []; V.maxJ = 0;
     for (var d = 0; d <= 360; d++) { var j = meterAt(d / 2); V.table.push(j); if (j > V.maxJ) { V.maxJ = j; V.bestAngle = d / 2; } }
   }
@@ -470,43 +628,67 @@ var EXAMPLE_CLIPS = [
   }
   function meterAt(deg) { var y = project(deg); return nonGaussianity(y[0]) + nonGaussianity(y[1]); }
   function outputsAt(deg) { return applyMatrix(rot(deg * Math.PI / 180), V.Z); }
+  // Color of each output at this dial angle: the color of the sound it matches, blended while it is still a mix.
+  function outColors(deg) {
+    var y = project(deg);
+    return y.map(function (yi) {
+      var ra = Math.abs(corr(yi, V.s1sub)), rb = Math.abs(corr(yi, V.s2sub)), u = rb / (ra + rb || 1);
+      u = Math.max(0, Math.min(1, (u - 0.5) * 1.6 + 0.5));
+      return blend(V.colA, V.colB, u);
+    });
+  }
 
   function drawScatter(pts, view, angle) {
     var cv = $('viz-canvas'), g = setupCanvas(cv, 420), c = g.c, w = g.w, h = g.h;
-    var half = Math.min(w, h) / 2 - 18, cx = w / 2, cy = h / 2, k = half / view;
-    c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
-    c.strokeStyle = '#d5dae0'; c.lineWidth = 1;
-    c.beginPath(); c.moveTo(cx - half - 8, cy + 0.5); c.lineTo(cx + half + 8, cy + 0.5);
-    c.moveTo(cx + 0.5, cy - half - 8); c.lineTo(cx + 0.5, cy + half + 8); c.stroke();
-    c.fillStyle = 'rgba(31,58,95,0.30)';
-    for (var i = 0; i < pts.length; i += 2) c.fillRect(cx + pts[i] * k - 1, cy - pts[i + 1] * k - 1, 2, 2);
+    var half = Math.min(w, h) / 2 - 18, cx = w / 2, cy = h / 2, k = half / view, i, b;
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h);
+    graticule(c, cx - half, cy - half, 2 * half, 2 * half, 8, 8, true);
+    c.strokeStyle = 'rgba(150,175,210,0.28)'; c.lineWidth = 1;
+    c.strokeRect(Math.round(cx - half) + 0.5, Math.round(cy - half) + 0.5, Math.round(2 * half), Math.round(2 * half));
+    c.globalCompositeOperation = 'lighter';
+    for (b = 0; b < DOT_BINS; b++) {
+      var list = V.binIdx[b];
+      c.fillStyle = rgba(V.binColors[b], 0.5);
+      for (i = 0; i < list.length; i++) { var q = 2 * list[i]; c.fillRect(cx + pts[q] * k - 1, cy - pts[q + 1] * k - 1, 2, 2); }
+    }
+    c.globalCompositeOperation = 'source-over';
     var lbl = V.step === 0 ? ['Sound A', 'Sound B'] : (V.step >= 3 ? ['', ''] : ['Mic 1', 'Mic 2']);
-    c.fillStyle = '#5b6470'; c.font = '12px system-ui, -apple-system, sans-serif';
-    c.textAlign = 'right'; c.fillText(lbl[0], cx + half + 8, cy - 6);
-    c.textAlign = 'left'; c.fillText(lbl[1], cx + 6, cy - half - 2);
+    var lc = V.step === 0 ? [V.colA, V.colB] : [COLORS.mix, COLORS.mix];
+    c.font = '600 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+    c.textAlign = 'right'; c.fillStyle = lc[0]; c.fillText(lbl[0], cx + half - 4, cy - 7);
+    c.textAlign = 'left'; c.fillStyle = lc[1]; c.fillText(lbl[1], cx + 7, cy - half + 14);
     if (angle != null) {
-      var th = angle * Math.PI / 180, L = half + 6;
-      [[Math.cos(th), Math.sin(th), '1'], [-Math.sin(th), Math.cos(th), '2']].forEach(function (d) {
-        c.strokeStyle = ACCENT; c.lineWidth = 2;
-        c.beginPath(); c.moveTo(cx - d[0] * L, cy + d[1] * L); c.lineTo(cx + d[0] * L, cy - d[1] * L); c.stroke();
-        c.fillStyle = ACCENT; c.font = 'bold 13px system-ui, -apple-system, sans-serif'; c.textAlign = 'center';
-        c.fillText('Output ' + d[2], cx + d[0] * (L - 26), cy - d[1] * (L - 26) - 6);
+      var th = angle * Math.PI / 180, L = half + 6, oc = outColors(angle);
+      [[Math.cos(th), Math.sin(th), '1'], [-Math.sin(th), Math.cos(th), '2']].forEach(function (d, n) {
+        c.beginPath(); c.moveTo(cx - d[0] * L, cy + d[1] * L); c.lineTo(cx + d[0] * L, cy - d[1] * L);
+        glowStroke(c, oc[n], 2, 14);
+        c.save(); c.font = 'bold 13px system-ui, -apple-system, sans-serif'; c.textAlign = 'center';
+        c.shadowColor = '#000'; c.shadowBlur = 6; c.fillStyle = oc[n];
+        c.fillText('Output ' + d[2], cx + d[0] * (L - 26), cy - d[1] * (L - 26) - 6); c.restore();
       });
     }
   }
 
-  function drawHist(canvas, y) {
-    var g = setupCanvas(canvas, 70), c = g.c, w = g.w, h = g.h, bins = 41, lo = -4, hi = 4, cnt = new Array(bins).fill(0), i, mx = 0;
+  function drawHist(canvas, y, color) {
+    var g = setupCanvas(canvas, 74), c = g.c, w = g.w, h = g.h, bins = 41, lo = -4, hi = 4, cnt = new Array(bins).fill(0), i, mx = 0;
     for (i = 0; i < y.length; i++) { var b = Math.floor((y[i] - lo) / (hi - lo) * bins); if (b >= 0 && b < bins) cnt[b]++; }
     for (i = 0; i < bins; i++) mx = Math.max(mx, cnt[i]);
-    c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
-    c.fillStyle = ACCENT;
-    var bw = w / bins;
-    for (i = 0; i < bins; i++) { var bh = (h - 4) * cnt[i] / mx; c.fillRect(i * bw + 0.5, h - bh, Math.max(1, bw - 1), bh); }
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h);
+    graticule(c, 0, 0, w, h, 8, 3);
+    var bw = w / bins, grad = c.createLinearGradient(0, h, 0, 0);
+    grad.addColorStop(0, rgba(color, 0.25)); grad.addColorStop(1, rgba(color, 0.95));
+    c.save(); c.shadowColor = color; c.shadowBlur = 8; c.fillStyle = grad;
+    for (i = 0; i < bins; i++) { var bh = (h - 4) * cnt[i] / mx; c.fillRect(i * bw + 0.5, h - bh, Math.max(1, bw - 1.5), bh); }
+    c.restore();
   }
 
+  function vizBtnColors() {
+    $('viz-pa').style.setProperty('--c', V.step === 0 ? V.colA : COLORS.mix);
+    $('viz-pb').style.setProperty('--c', V.step === 0 ? V.colB : COLORS.mix);
+  }
   function vizRender() {
     var s = V.step;
+    vizBtnColors();
     if (V.anim) return;
     drawScatter(V.frames[s], V.views[s], s === 4 ? V.angle : null);
     if (s === 4) vizDial();
@@ -515,21 +697,27 @@ var EXAMPLE_CLIPS = [
   function vizDial() {
     var j = meterAt(V.angle), pct = Math.round(100 * j / V.maxJ);
     $('viz-angle-out').textContent = Math.round(V.angle) + '°';
-    $('viz-meter-bar').style.width = Math.max(1, pct) + '%';
+    var meter = $('viz-meter-bar');
+    meter.style.setProperty('--meter-w', (meter.parentNode.clientWidth || 300) + 'px');
+    meter.style.width = Math.max(1, pct) + '%';
     $('viz-meter-out').textContent = pct + '% of the best';
-    var y = project(V.angle);
-    drawHist($('viz-hist1'), y[0]); drawHist($('viz-hist2'), y[1]);
+    var y = project(V.angle), oc = outColors(V.angle);
+    drawHist($('viz-hist1'), y[0], oc[0]); drawHist($('viz-hist2'), y[1], oc[1]);
+    $('viz-hist1').parentNode.style.setProperty('--c', oc[0]);
+    $('viz-hist2').parentNode.style.setProperty('--c', oc[1]);
     if ($('viz-strip-wrap').open) drawStrip();
   }
 
   function drawStrip() {
-    var cv = $('viz-strip'), g = setupCanvas(cv, 60), c = g.c, w = g.w, h = g.h;
-    c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
-    c.strokeStyle = ACCENT; c.lineWidth = 1.5; c.beginPath();
+    var cv = $('viz-strip'), g = setupCanvas(cv, 64), c = g.c, w = g.w, h = g.h;
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h);
+    graticule(c, 0, 0, w, h, 12, 3);
+    c.beginPath();
     V.table.forEach(function (j, d) { var x = d / 360 * w, y = h - 4 - (h - 10) * j / V.maxJ; if (d) c.lineTo(x, y); else c.moveTo(x, y); });
-    c.stroke();
+    glowStroke(c, '#e6ebf2', 1.4, 8);
     var xa = V.angle / 180 * w;
-    c.strokeStyle = '#8a2b2b'; c.beginPath(); c.moveTo(xa, 0); c.lineTo(xa, h); c.stroke();
+    c.beginPath(); c.moveTo(xa, 0); c.lineTo(xa, h);
+    glowStroke(c, '#ff5a5a', 1.5, 10);
   }
 
   function ease(u) { return u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2; }
@@ -553,6 +741,7 @@ var EXAMPLE_CLIPS = [
     if (reduceMotion || Math.abs(step - from) !== 1 || step === 4 || from === 4) { vizRender(); return; }
     var P = V.frames[from], Q = V.frames[step], vp = V.views[from], vq = V.views[step];
     var tmp = new Float32Array(P.length), t0 = null, DURA = 900;
+    vizBtnColors();
     function frame(ts) {
       if (t0 == null) t0 = ts;
       var u = ease(Math.min(1, (ts - t0) / DURA));
@@ -565,17 +754,18 @@ var EXAMPLE_CLIPS = [
 
   function vizRebuild() {
     vizCompute();
-    $('viz-done').textContent = ''; $('viz-rounds').textContent = '';
+    $('viz-done').textContent = ''; $('viz-rounds').textContent = ''; $('viz-round-counter').innerHTML = '';
     vizRender();
   }
 
   function vizMixer() {
     var box = $('viz-mixer'), html = '';
     var la = V.clipList[V.a].label, lb = V.clipList[V.b].label;
+    vizColors();
     for (var i = 0; i < 2; i++) {
       html += '<div class="mixrow"><span class="mixmic">Mic ' + (i + 1) + ' hears</span>';
       for (var j = 0; j < 2; j++) {
-        html += '<label class="slider">' + esc(j ? 'B: ' + lb : 'A: ' + la) +
+        html += '<label class="slider" style="--c:' + (j ? V.colB : V.colA) + '">' + esc(j ? 'B: ' + lb : 'A: ' + la) +
           ' <input type="range" min="0" max="1" step="0.05" id="v' + i + j + '" value="' + V.A[i][j] + '">' +
           ' <output id="v' + i + j + '-out">' + V.A[i][j].toFixed(2) + '</output></label>';
       }
@@ -605,8 +795,11 @@ var EXAMPLE_CLIPS = [
     var k = 1, last = hist[hist.length - 1];
     function angleOf(W) { var a = Math.atan2(W[0][1], W[0][0]) * 180 / Math.PI; if (a < 0) a += 180; if (a >= 180) a -= 180; return a; }
     function show(h) {
-      $('viz-rounds').textContent = 'Round ' + h.r + ' · dial at ' + Math.round(angleOf(h.W)) + '° · meter ' +
-        Math.round(100 * meterAt(angleOf(h.W)) / V.maxJ) + '%' + (h.change != null ? ' · moved ' + h.change.toExponential(1) : '');
+      var deg = Math.round(angleOf(h.W)), pct = Math.round(100 * meterAt(angleOf(h.W)) / V.maxJ);
+      $('viz-rounds').textContent = 'Round ' + h.r + ' · dial at ' + deg + '° · meter ' +
+        pct + '%' + (h.change != null ? ' · moved ' + h.change.toExponential(1) : '');
+      $('viz-round-counter').innerHTML = '<span class="rc-label">ROUND</span><span class="rc-num tick">' +
+        (h.r < 10 ? '0' : '') + h.r + '</span><span class="rc-label">' + deg + '° · ' + pct + '%</span>';
     }
     function finish() {
       V.running = false;
@@ -656,6 +849,9 @@ var EXAMPLE_CLIPS = [
       b.addEventListener('click', function () { vizGo(k); });
       $('viz-steps').appendChild(b);
     });
+    var rc = document.createElement('div');                 // big monospace round readout
+    rc.className = 'round-counter'; rc.id = 'viz-round-counter'; rc.setAttribute('aria-hidden', 'true');
+    $('viz-rounds').parentNode.insertBefore(rc, $('viz-rounds'));
     $('viz-back').addEventListener('click', function () { vizGo(V.step - 1); });
     $('viz-next').addEventListener('click', function () { vizGo(V.step + 1); });
     playButton($('viz-pa'), function () { return V.step === 0 ? V.S[0] : V.X[0]; });
@@ -679,12 +875,12 @@ var EXAMPLE_CLIPS = [
   // ===================== The full 3-sound demo =====================
   function buildMatrix() {
     var tbl = $('mix-matrix'), html = '<tr><th></th>', i, j;
-    for (j = 0; j < 3; j++) html += '<th scope="col">' + esc(demoClips[j].label) + '</th>';
+    for (j = 0; j < 3; j++) html += '<th scope="col" style="--c:' + colorOf(demoClips[j]) + '">' + esc(demoClips[j].label) + '</th>';
     html += '</tr>';
     for (i = 0; i < 3; i++) {
       html += '<tr><th scope="row">' + MICS[i] + '</th>';
       for (j = 0; j < 3; j++)
-        html += '<td><input type="number" min="0" max="1" step="0.05" id="a' + i + j + '" value="' +
+        html += '<td style="--c:' + colorOf(demoClips[j]) + '"><input type="number" min="0" max="1" step="0.05" id="a' + i + j + '" value="' +
           A[i][j].toFixed(2) + '" aria-label="How loud ' + esc(demoClips[j].label) + ' is at the ' + MICS[i].toLowerCase() + '"></td>';
       html += '</tr>';
     }
@@ -702,28 +898,33 @@ var EXAMPLE_CLIPS = [
   }
 
   function updateMixtures() {
+    stopPlaying();
     mixtures = mix(A, sources);
-    for (var i = 0; i < 3; i++) drawWave($('mic' + i + '-wave'), mixtures[i]);
+    for (var i = 0; i < 3; i++) drawWave($('mic' + i + '-wave'), mixtures[i], COLORS.mix);
     $('mix-warn').textContent = Math.abs(det(A)) < 1e-3
       ? 'With these numbers, the mics hear (almost) the same blend, so the sounds can’t be pulled apart. Try changing a number.' : '';
     $('ica-out').innerHTML = '<p class="muted">Press “Separate” to let the computer pull the sounds apart.</p>';
     $('ica-status').textContent = '';
+    lastOutputs = null;
   }
 
   var separations = 0;
   function separate() {
+    stopPlaying();
     var seed = separations++ === 0 ? 1 : (Date.now() & 0xffff);
     var res = fastICA(mixtures, { maxIter: 200, tol: 1e-6, seed: seed });
     var match = matchComponents(res.Y, sources);
     var out = $('ica-out');
     out.innerHTML = '';
+    lastOutputs = [];
     res.Y.forEach(function (y, i) {
-      var mt = match[i];
-      var note = 'Sounds like: ' + esc(demoClips[mt.source].label) + ', match ' + mt.abs.toFixed(2) +
+      var mt = match[i], color = colorOf(demoClips[mt.source]);   // each output takes the color of the sound it matches
+      var note = 'Sounds like: <b>' + esc(demoClips[mt.source].label) + '</b>, match ' + mt.abs.toFixed(2) +
         (mt.corr < 0 ? ' (came out upside down, which sounds the same)' : '');
-      out.appendChild(trackRow('Track ' + (i + 1), 'ic' + i, note));
+      out.appendChild(trackRow('Track ' + (i + 1), 'ic' + i, note, color));
       var yn = normalizePeak(y, 0.9);
-      drawWave($('ic' + i + '-wave'), yn);
+      drawWave($('ic' + i + '-wave'), yn, color);
+      lastOutputs.push({ y: yn, color: color });
       playButton($('ic' + i + '-play'), function () { return yn; });
     });
     $('ica-status').textContent = (res.converged ? 'Done! ' : 'Stopped. ') + 'It took ' + res.iterations +
@@ -735,11 +936,11 @@ var EXAMPLE_CLIPS = [
     var srcBox = $('sources'), micBox = $('mics'), i;
     srcBox.innerHTML = ''; micBox.innerHTML = '';
     for (i = 0; i < 3; i++) {
-      srcBox.appendChild(trackRow(demoClips[i].label + (demoClips[i].kind === 'example' ? ' (example sound)' : ''), 'src' + i));
-      micBox.appendChild(trackRow(MICS[i], 'mic' + i));
+      srcBox.appendChild(trackRow(demoClips[i].label + (demoClips[i].kind === 'example' ? ' (example sound)' : ''), 'src' + i, null, colorOf(demoClips[i])));
+      micBox.appendChild(trackRow(MICS[i], 'mic' + i, null, COLORS.mix));
     }
     for (i = 0; i < 3; i++) (function (i) {
-      drawWave($('src' + i + '-wave'), sources[i]);
+      drawWave($('src' + i + '-wave'), sources[i], colorOf(demoClips[i]));
       playButton($('src' + i + '-play'), function () { return sources[i]; });
       playButton($('mic' + i + '-play'), function () { return mixtures[i]; });
     })(i);
@@ -766,15 +967,143 @@ var EXAMPLE_CLIPS = [
     var box = $('kids-slots'), html = '';
     ['kitchen', 'hall', 'classroom'].forEach(function (place) {
       var mine = CLASSROOM_CLIPS.filter(function (c) { return c.place === place; });
-      if (!mine.length) html += '<div class="slot empty">[Kids’ recording from ' + PLACE_NAMES[place] + ' — to be added]</div>';
+      if (!mine.length) html += '<div class="slot empty" style="border-color:' + rgba(COLORS[place], 0.35) + '">[Kids’ recording from ' + PLACE_NAMES[place] + ' — to be added]</div>';
       mine.forEach(function (c) {
-        html += '<div class="slot"><strong>' + esc(c.label) + '</strong><audio controls preload="none" src="' + esc(c.src) + '"></audio></div>';
+        html += '<div class="slot" style="border-color:' + rgba(COLORS[place], 0.5) + '"><strong>' + esc(c.label) + '</strong><audio controls preload="none" src="' + esc(c.src) + '"></audio></div>';
       });
     });
     box.innerHTML = html;
   }
 
+  // ===================== Hero: a mixed signal that unmixes itself =====================
+  function hero() {
+    var cv = $('hero-canvas'), scope = $('hero-scope');
+    if (!cv || !scope || !cv.getContext) return;
+    var box = cv.parentNode, ctx = cv.getContext('2d'), W = 0, H = 0, dpr = 1, area = null;
+    var raf = null, tStart = null, visible = true, p = reduceMotion ? 1 : 0, flow = 0;
+    var DELAY = 500, DUR_SEP = 2800, TAU = Math.PI * 2;
+    var LANES = [{ name: 'KITCHEN', color: COLORS.kitchen }, { name: 'HALL', color: COLORS.hall }, { name: 'CLASSROOM', color: COLORS.classroom }];
+    function fract(v) { return v - Math.floor(v); }
+    // three made-up "sounds": clattery bursts, a steady murmur, and syllable-like speech
+    function sig(i, s) {
+      if (i === 0) {
+        var e = Math.exp(-7 * fract(s * 0.83)) * 0.95 + Math.exp(-10 * fract(s * 1.31 + 0.37)) * 0.6;
+        return 0.65 * e * (Math.sin(TAU * s * 37) * 0.7 + Math.sin(TAU * s * 61.3 + 1.3) * 0.45 + Math.sin(TAU * s * 89.7) * 0.25);
+      }
+      if (i === 1) {
+        return 0.42 * (Math.sin(TAU * s * 6.1) + 0.7 * Math.sin(TAU * s * 11.3 + 1) + 0.45 * Math.sin(TAU * s * 19.7 + 2)) *
+          (0.75 + 0.25 * Math.sin(TAU * s * 0.37));
+      }
+      var env = Math.pow(Math.max(0, Math.sin(TAU * s * 1.9)), 1.6) * (0.65 + 0.35 * Math.sin(TAU * s * 0.53 + 0.6));
+      return 0.95 * env * Math.sin(TAU * s * 22 + 2.2 * Math.sin(TAU * s * 2.7));
+    }
+    function size() {
+      dpr = Math.min(2, root.devicePixelRatio || 1);
+      var r = box.getBoundingClientRect(), s = scope.getBoundingClientRect();
+      W = r.width; H = r.height;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      area = { y: s.top - r.top, h: s.height };
+    }
+    function draw() {
+      var c = ctx, e = ease(p), y0 = area.y, ah = area.h, mid = y0 + ah / 2, i, x;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.clearRect(0, 0, W, H);
+      // scope frame + graticule over the wave area
+      var pad = Math.min(24, W * 0.04);
+      graticule(c, pad, y0, W - 2 * pad, ah, Math.max(6, Math.round((W - 2 * pad) / 90)), 6);
+      c.strokeStyle = 'rgba(150,175,210,0.18)'; c.lineWidth = 1;
+      c.strokeRect(Math.round(pad) + 0.5, Math.round(y0) + 0.5, Math.round(W - 2 * pad), Math.round(ah));
+      var span = W / 230, step = W > 700 ? 1.5 : 1.25, lanes = [mid - ah / 3, mid, mid + ah / 3];
+      var ampMix = ah * 0.24, ampLane = ah * 0.12;
+      for (i = 2; i >= 0; i--) {
+        var yc = mid + (lanes[i] - mid) * e, amp = ampMix + (ampLane - ampMix) * e;
+        var col = blend(COLORS.mix, LANES[i].color, Math.min(1, e * 1.2));
+        c.beginPath();
+        for (x = pad; x <= W - pad; x += step) {
+          var s = (x / W) * span * 3 + flow * 0.42;
+          var m = (sig(0, s) + sig(1, s + 0.9) + sig(2, s + 0.3)) * 0.6;
+          var v = m + (sig(i, s + (i === 1 ? 0.9 : i === 2 ? 0.3 : 0)) - m) * e;
+          var Y = yc - v * amp;
+          if (x === pad) c.moveTo(x, Y); else c.lineTo(x, Y);
+        }
+        glowStroke(c, col, 1.5, 12 * (0.4 + 0.6 * e));
+      }
+      // readouts
+      c.font = '600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+      c.textAlign = 'left';
+      c.fillStyle = rgba(COLORS.mix, 0.75 * (1 - Math.min(1, e * 2)));
+      c.fillText('MIXED SIGNAL', pad + 2, y0 - 7);
+      for (i = 0; i < 3; i++) {
+        c.fillStyle = rgba(LANES[i].color, Math.max(0, e * 1.6 - 0.6));
+        c.fillText('CH.' + 'ABC'.charAt(i) + '  ' + LANES[i].name, pad + 10, lanes[i] - ah / 6 + 16);
+      }
+      c.textAlign = 'right'; c.fillStyle = 'rgba(154,166,182,0.8)';
+      c.fillText('ICA  ' + (p >= 1 ? 'SEPARATED' : 'UNMIXING ' + String(Math.round(p * 100)).padStart(3, ' ') + '%'), W - pad - 2, y0 - 7);
+    }
+    function frame(ts) {
+      raf = null;
+      if (tStart == null) tStart = ts;
+      var el = ts - tStart;
+      p = Math.max(0, Math.min(1, (el - DELAY) / DUR_SEP));
+      flow = el / 1000;
+      draw();
+      if (p >= 1) box.setAttribute('data-hero', 'done');
+      if (visible && !document.hidden) raf = requestAnimationFrame(frame);
+    }
+    function wake() { if (!reduceMotion && !raf && visible && !document.hidden) raf = requestAnimationFrame(frame); }
+    size();
+    if (reduceMotion) { draw(); box.setAttribute('data-hero', 'done'); }
+    else {
+      wake();
+      if ('IntersectionObserver' in root) {
+        new IntersectionObserver(function (es) { visible = es[0].isIntersecting; wake(); }).observe(box);
+      }
+      document.addEventListener('visibilitychange', wake);
+    }
+    var rt;
+    root.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { size(); draw(); }, 100); });
+  }
+
+  // ===================== Small page touches =====================
+  function reveals() {
+    if (reduceMotion || !('IntersectionObserver' in root)) return;
+    var boxes = document.querySelectorAll('.page > .box:not(.toc)');
+    document.documentElement.classList.add('reveal-on');
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { rootMargin: '0px 0px -6% 0px', threshold: 0 });
+    [].forEach.call(boxes, function (b) { io.observe(b); });
+  }
+
+  // Hand-rolled highlighting for the code and the test log (no libraries).
+  function highlight() {
+    var KW = /^(var|for|if|else|break|new|function|return|true|false|null)$/;
+    [].forEach.call(document.querySelectorAll('pre > code'), function (el) {
+      var src = el.textContent, out = '', last = 0, m;
+      var re = /(\/\/[^\n]*)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_$][\w$]*)|([{}()[\];,.=<>+\-*\/!&|]+)/g;
+      while ((m = re.exec(src))) {
+        out += esc(src.slice(last, m.index)); last = re.lastIndex;
+        if (m[1]) out += '<span class="tk-c">' + esc(m[1]) + '</span>';
+        else if (m[2]) out += '<span class="tk-n">' + m[2] + '</span>';
+        else if (m[3]) {
+          if (KW.test(m[3])) out += '<span class="tk-k">' + m[3] + '</span>';
+          else if (src.charAt(last) === '(') out += '<span class="tk-f">' + m[3] + '</span>';
+          else out += m[3];
+        } else out += '<span class="tk-p">' + esc(m[4]) + '</span>';
+      }
+      el.innerHTML = out + esc(src.slice(last));
+    });
+    [].forEach.call(document.querySelectorAll('pre.log'), function (el) {
+      el.innerHTML = esc(el.textContent)
+        .replace(/\b(Kitchen|Hall|Classroom)\b/g, function (w) { return '<span class="tk-' + w.toLowerCase() + '">' + w + '</span>'; })
+        .replace(/\bPASS\b/g, '<span class="tk-pass">PASS</span>');
+    });
+  }
+
   function init() {
+    hero();
+    reveals();
+    highlight();
     kidsSlots();
     var status = $('load-status');
     status.textContent = 'Loading sounds…';
@@ -804,7 +1133,12 @@ var EXAMPLE_CLIPS = [
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(function () {
         if (!sources) return;
-        for (var i = 0; i < 3; i++) { drawWave($('src' + i + '-wave'), sources[i]); drawWave($('mic' + i + '-wave'), mixtures[i]); }
+        for (var i = 0; i < 3; i++) {
+          drawWave($('src' + i + '-wave'), sources[i], colorOf(demoClips[i]));
+          drawWave($('mic' + i + '-wave'), mixtures[i], COLORS.mix);
+          if (lastOutputs && $('ic' + i + '-wave')) drawWave($('ic' + i + '-wave'), lastOutputs[i].y, lastOutputs[i].color);
+        }
+        liveSize();
         if (!V.running) vizRender();
       }, 150);
     });

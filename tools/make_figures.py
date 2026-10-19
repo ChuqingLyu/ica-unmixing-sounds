@@ -21,7 +21,13 @@ N = SR * DUR
 NAMES = ["Kitchen", "Hall", "Classroom"]
 MICS = ["Mic by the door", "Mic by the window", "Mic at the back"]
 A = np.array([[1.0, 0.45, 0.6], [0.5, 1.0, 0.35], [0.4, 0.55, 0.9]])   # DEFAULT_MIX in ica.js
-ACCENT = "#1f3a5f"
+# page colors: each sound keeps its color everywhere (see style.css)
+BG, EDGE, GRID, TEXT, MUTED = "#080c13", "#2b394f", "#18212f", "#e6ebf2", "#9aa6b6"
+COLORS = ["#ffb347", "#3fd0c9", "#ff6fae"]                              # Kitchen, Hall, Classroom
+MIXC, OKC, STOP = "#c9d1dc", "#9be37a", "#ff5a5a"
+
+def hex_rgb(h): return [int(h[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+def blend(a, b, u): return tuple(x + (y - x) * u for x, y in zip(hex_rgb(a), hex_rgb(b)))
 GAUSS_LOGCOSH = 0.3745672
 
 def mulberry32(seed):                      # same random numbers as rng() in ica.js
@@ -96,18 +102,34 @@ def main():
     # unmixing (W K) times mixing (A), with each sound scaled to the same loudness
     P = W @ K @ A @ np.diag(S.std(axis=1))
     os.makedirs(OUT, exist_ok=True)
-    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "axes.edgecolor": "#888",
-                         "axes.spines.top": False, "axes.spines.right": False})
+    # dark "sound lab" theme, same colors as the page
+    plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10,
+                         "figure.facecolor": BG, "axes.facecolor": BG, "savefig.facecolor": BG,
+                         "axes.edgecolor": EDGE, "axes.labelcolor": MUTED, "text.color": TEXT,
+                         "xtick.color": MUTED, "ytick.color": MUTED, "axes.titlecolor": TEXT,
+                         "axes.spines.top": False, "axes.spines.right": False,
+                         "axes.grid": True, "grid.color": GRID, "grid.linewidth": 0.8})
+
+    def glow(ax, x, y, color, marker=None, lw=1.6):
+        for w, a in [(lw * 6, 0.06), (lw * 3.5, 0.10), (lw * 2, 0.18)]:
+            ax.plot(x, y, color=color, lw=w, alpha=a, solid_capstyle="round", zorder=2)
+        ax.plot(x, y, color=color, lw=lw, zorder=3)
+        if marker:
+            ax.plot(x, y, marker, ms=5.5, mfc=BG, mec=color, mew=1.4, ls="none", zorder=4)
 
     # --- convergence ---
     rr = [e["round"] for e in log]
     fig, ax = plt.subplots(1, 2, figsize=(8.4, 3.0), dpi=150)
-    ax[0].semilogy(rr[1:], [e["change"] for e in log[1:]], "o-", color=ACCENT)
-    ax[0].axhline(1e-6, color="#8a2b2b", lw=1, ls="--"); ax[0].text(rr[-1], 1.6e-6, "stop here", ha="right", color="#8a2b2b", fontsize=9)
+    ax[0].set_yscale("log")
+    glow(ax[0], rr[1:], [e["change"] for e in log[1:]], MIXC, "o")
+    ax[0].axhline(1e-6, color=STOP, lw=1, ls="--"); ax[0].text(rr[-1], 1.6e-6, "stop here", ha="right", color=STOP, fontsize=9, family="DejaVu Sans Mono")
     ax[0].set_xlabel("round"); ax[0].set_title("How much the unmixing changed", fontsize=10)
-    ax[1].plot(rr, [e["independence"] for e in log], "o-", color=ACCENT)
+    glow(ax[1], rr, [e["independence"] for e in log], OKC, "o")
     ax[1].set_xlabel("round"); ax[1].set_title("Independence score (higher = more separate)", fontsize=10)
-    for a in ax: a.set_xticks(rr)
+    for a in ax:
+        a.set_xticks(rr); a.grid(True, which="major")
+        a.tick_params(labelsize=8.5, length=3)
+        for t in a.get_xticklabels() + a.get_yticklabels(): t.set_family("DejaVu Sans Mono")
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "convergence.png")); plt.close(fig)
 
     # --- one output track over the rounds ---
@@ -115,27 +137,50 @@ def main():
     mid = max(1, rounds // 2)
     t = np.arange(N) / SR
     fig, ax = plt.subplots(3, 1, figsize=(8.4, 4.6), dpi=150, sharex=True)
+    final = match[k]
     for a, rnd in zip(ax, [0, mid, rounds]):
         y = snaps[rnd][k]; rs = log[rnd]["abs_r"][k]
-        a.plot(t, y, color=ACCENT, lw=0.4)
-        a.set_ylabel(f"round {rnd}", rotation=0, ha="right", va="center")
-        a.set_yticks([])
-        a.set_title("match with  " + ",  ".join(f"{NAMES[j]} {rs[j]:.2f}" for j in range(3)), fontsize=9, loc="left")
+        u = float(np.clip((rs[final] - 0.6) / 0.4, 0, 1))      # gray while mixed, the sound's color once it matches
+        col = blend(MIXC, COLORS[final], u)
+        a.plot(t, y, color=col, lw=1.6, alpha=0.12)
+        a.plot(t, y, color=col, lw=0.4)
+        a.set_ylabel(f"round {rnd}", rotation=0, ha="right", va="center", family="DejaVu Sans Mono", color=TEXT)
+        a.set_yticks([]); a.grid(True, axis="x")
+        a.text(0.0, 1.06, "match with", transform=a.transAxes, fontsize=9, color=MUTED, family="DejaVu Sans Mono")
+        x0 = 0.115
+        for j in range(3):
+            lab = f"{NAMES[j]} {rs[j]:.2f}"
+            a.text(x0, 1.06, lab, transform=a.transAxes, fontsize=9, color=COLORS[j], family="DejaVu Sans Mono",
+                   fontweight="bold" if rs[j] > 0.5 else "normal", alpha=1 if rs[j] > 0.2 else 0.6)
+            x0 += 0.0105 * (len(lab) + 3)
     ax[-1].set_xlabel("seconds")
+    ax[-1].tick_params(labelsize=8.5)
     fig.tight_layout(); fig.savefig(os.path.join(OUT, "track-snapshots.png")); plt.close(fig)
 
-    # --- W . A heatmap ---
+    # --- W . A heatmap: each cell glows in its sound's color, as strong as |value| ---
     fig, ax = plt.subplots(figsize=(4.4, 3.4), dpi=150)
-    im = ax.imshow(P, cmap="RdBu_r", vmin=-1.1, vmax=1.1)
+    img = np.zeros((3, 3, 3))
+    bg = np.array(hex_rgb(BG))
     for i in range(3):
         for j in range(3):
-            ax.text(j, i, ("+0.00" if abs(P[i, j]) < 0.005 else f"{P[i, j]:+.2f}"), ha="center", va="center", color="white" if abs(P[i, j]) > 0.6 else "#1d2228", fontsize=10)
+            a_ = min(1.0, abs(P[i, j]))
+            img[i, j] = bg + (np.array(hex_rgb(COLORS[j])) - bg) * (0.08 + 0.92 * a_)
+    ax.imshow(img)
+    for i in range(3):
+        for j in range(3):
+            ax.text(j, i, ("+0.00" if abs(P[i, j]) < 0.005 else f"{P[i, j]:+.2f}"), ha="center", va="center",
+                    color=BG if abs(P[i, j]) > 0.6 else MUTED, fontsize=11, family="DejaVu Sans Mono",
+                    fontweight="bold" if abs(P[i, j]) > 0.6 else "normal")
     ax.set_xticks(range(3)); ax.set_xticklabels(NAMES)
+    for j, tl in enumerate(ax.get_xticklabels()): tl.set_color(COLORS[j]); tl.set_family("DejaVu Sans Mono")
     ax.set_yticks(range(3)); ax.set_yticklabels([f"Output {i + 1}" for i in range(3)])
+    for i, tl in enumerate(ax.get_yticklabels()): tl.set_color(COLORS[match[i]]); tl.set_family("DejaVu Sans Mono")
+    ax.set_xticks(np.arange(-0.5, 3, 1), minor=True); ax.set_yticks(np.arange(-0.5, 3, 1), minor=True)
+    ax.grid(False); ax.grid(True, which="minor", color=BG, linewidth=3)
+    ax.tick_params(which="both", length=0)
     ax.spines[:].set_visible(False)
     ax.set_xlabel("original sound"); ax.set_title("What the learned unmixing does to each sound", fontsize=10)
-    fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    fig.tight_layout(); fig.savefig(os.path.join(OUT, "unmix-times-mix.png"), bbox_inches="tight"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(os.path.join(OUT, "unmix-times-mix.png"), bbox_inches="tight", pad_inches=0.18); plt.close(fig)
 
     summary = {"mix": A.tolist(), "mics": MICS, "sources": NAMES, "seed": 1, "rounds": rounds,
                "final_change": log[-1]["change"], "output_matches": [NAMES[m] for m in match],

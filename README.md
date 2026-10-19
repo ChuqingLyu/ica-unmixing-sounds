@@ -12,6 +12,8 @@ Vanilla JavaScript, no dependencies. Everything runs in the browser.
 - **The full demo** (3 sounds, 3 mics): play the sounds, edit or randomize the 3×3 loudness table, press Separate, and see which sound each recovered track matches.
 - **Behind the scenes**: figures from a real FastICA run on the example sounds with the page's default mix.
 
+**Look:** a dark "sound lab" theme with system fonts only, no external assets. Each sound keeps one color everywhere (Kitchen amber, Hall teal, Classroom pink; mic mixes are gray), and each recovered track takes the color of the sound it matches. The animated hero shows a mixed signal splitting into the three sounds. Every Play button opens a live oscilloscope and spectrum (Web Audio `AnalyserNode`) in that track's color, with a playhead moving across the waveform. With `prefers-reduced-motion`, the hero shows its separated state and sections appear without the scroll animation.
+
 URL options: `?autorun=1` presses Separate once the sounds load; `?vizstep=4` opens the visualizer at step 4 (`&vizangle=30` sets the dial).
 
 ## Sounds
@@ -65,7 +67,7 @@ Runs FastICA from `ica.js` on 12 random 3×3 mixes and 18 random 2×2 mixes of t
 python3 tools/make_figures.py   # needs numpy and matplotlib
 ```
 
-This is a numpy port of `fastICA()` in `ica.js` (same random start, centering, whitening, update and stopping rule), run on the page's default 3×3 mix. It writes `process/convergence.png`, `process/track-snapshots.png`, `process/unmix-times-mix.png` and `process/training-log.json`. On the current example sounds it stops after 7 rounds, the same as the page.
+This is a numpy port of `fastICA()` in `ica.js` (same random start, centering, whitening, update and stopping rule), run on the page's default 3×3 mix. It writes `process/convergence.png`, `process/track-snapshots.png`, `process/unmix-times-mix.png` (dark theme, same colors as the page) and `process/training-log.json`. On the current example sounds it stops after 7 rounds, the same as the page.
 
 ## License
 
