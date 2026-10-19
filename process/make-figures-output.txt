@@ -1,0 +1,14 @@
+rounds=7 final change=5.07e-07
+round  0 change=None independence=0.00409
+round  1 change=1.222e-02 independence=0.00477
+round  2 change=1.789e-02 independence=0.00618
+round  3 change=2.557e-02 independence=0.00905
+round  4 change=2.559e-02 independence=0.01189
+round  5 change=3.718e-03 independence=0.01224
+round  6 change=1.234e-05 independence=0.01224
+round  7 change=5.073e-07 independence=0.01224
+outputs: out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000
+unmix x mix:
+ [[ 0.009 -0.003 -1.   ]
+ [ 0.006 -1.     0.002]
+ [-1.    -0.009 -0.001]]

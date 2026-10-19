@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unmixing the Class Band · ICA demo · Lucy Lyu</title>
-  <meta name="description" content="A small ICA demo for music class: pulling instruments back out of mixed recordings.">
+  <title>Unmixing School Sounds · ICA project · Lucy Lyu</title>
+  <meta name="description" content="A small ICA project: kids collect sounds around school, mix them, and watch a computer pull them apart.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="page">
     <header class="site-header">
       <div>
-        <h1>Unmixing the Class Band</h1>
-        <p class="subtitle">A small ICA demo for music class: pulling instruments back out of mixed recordings</p>
+        <h1>Unmixing School Sounds</h1>
+        <p class="subtitle">A small ICA project: kids collect sounds around school, mix them, and watch a computer pull them apart</p>
       </div>
       <a class="gh-link" href="https://github.com/ChuqingLyu/ica-unmixing-sounds" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -20,88 +20,271 @@
       </a>
     </header>
 
-    <section class="box">
+    <nav class="toc box" aria-label="On this page">
+      <a href="#about">About</a> · <a href="#idea">The idea</a> · <a href="#what">What is ICA?</a> ·
+      <a href="#viz">Visualizer</a> · <a href="#school">Full demo</a> · <a href="#training">Behind the scenes</a> ·
+      <a href="#ai">Is this AI?</a> · <a href="#uses">Real life</a> · <a href="#challenges">Challenges</a> · <a href="#learners">Learners</a>
+    </nav>
+
+    <section class="box" id="about">
       <h2>About this project</h2>
-      <p>I made this for music class. Kids already practice picking out instruments by ear when they listen to a song. Here they can watch a computer try to do the same thing.</p>
-      <p>It is part of my research on helping kids understand AI by trying it with their own hands, inside subjects they already take. You change the mix, listen, and compare. No formulas needed.</p>
+      <p>This is a small project about ICA (Independent Component Analysis) for K-12 learners. Kids walk around their school and record everyday sounds in different places: the kitchen, the hall, a classroom. The computer mixes those sounds together, as if several microphones in one room heard them all at the same time. Then ICA pulls them apart again, using only the mixed recordings.</p>
+      <p>Everything runs in your browser. You can drag, listen and compare. No formulas needed.</p>
+      <p class="note">Right now the page uses example sounds (openly licensed recordings, see the credits at the bottom) until our classroom recordings are added. The kids did not record these.</p>
+      <p id="load-status" class="muted" role="status">This page needs JavaScript to load the sounds.</p>
     </section>
 
-    <section class="box">
+    <section class="box" id="idea">
       <h2>Where the idea came from</h2>
-      <p>I wanted kids to meet ICA somewhere familiar and fun (their music class) and to see what it can do in real life. The point isn't the math behind ICA. It's to make the cocktail party problem something they can actually hear and see being solved.</p>
-      <p>The cocktail party problem: at a noisy party, you can still follow one friend's voice while everyone else is talking. Can a computer do that too?</p>
+      <p>I wanted kids to meet ICA somewhere familiar and fun and to see what it can do in real life. The point isn't the math behind ICA. It's to make the cocktail party problem something they can actually hear and see being solved.</p>
+      <p>The cocktail party problem: in a noisy room full of people talking, you can still follow one friend's voice, so can a computer pull one sound out of a mix too?</p>
     </section>
 
-    <section class="box">
+    <section class="box" id="what">
       <h2>What is ICA?</h2>
-      <p>ICA stands for Independent Component Analysis. When several instruments play at once, each microphone records a blend of all of them. ICA is a way for a computer to find the separate sounds hidden inside those blends, using only the recordings. It works because each instrument does its own thing, so the computer looks for tracks that don't depend on each other. It's a bit like picking out the piano in a song by ear.</p>
+      <h3>1. A kind of unsupervised learning</h3>
+      <p>ICA is a kind of unsupervised learning. Nobody gives the computer labels or right answers. It is never told “this part is the kitchen.” It finds the structure in the data by itself. (In supervised learning, you show the computer examples with the answers, like photos marked “cat” or “dog”.) K-means clustering is another example of unsupervised learning; I made a small project about it too: <a href="https://lucylyu.surge.sh/vibe/palette/">K-means palette</a>.</p>
+      <p>Here, ICA gets only the mixed microphone recordings and looks for a way to split them into tracks that have nothing to do with each other.</p>
+      <h3>2. How it is usually taught</h3>
+      <p>ICA is usually taught in university courses, with matrices, probability and “statistical independence”, and plots of abstract signals. That's a lot to ask of K-12 learners who don't have that background yet.</p>
+      <h3>3. How I teach it</h3>
+      <p>I start from something kids already know: the sounds of their own school. They record sounds around school, see each moment of sound as a dot, and turn the dial themselves to unmix two sounds. Only after that does the computer do it, so they can see that it is doing the same thing they just did, only faster.</p>
     </section>
 
-    <section class="box">
-      <h2>The story</h2>
-      <p>Your class band plays a song together. Three microphones around the music room each pick up all the instruments at once. Can we get each instrument's own track back, using only the microphone recordings?</p>
-    </section>
-
-    <section class="box">
-      <h2>1 · The band (each instrument alone)</h2>
-      <p>This is what each instrument sounds like by itself. The song is “Twinkle Twinkle Little Star.”</p>
-      <div class="controls">
-        <button type="button" id="play-all" class="play">Play all together</button>
+    <section class="box" id="viz">
+      <h2>The ICA visualizer</h2>
+      <p>The smallest version of the problem: two sounds, two microphones. Pick two of the example sounds and walk through the steps.</p>
+      <div class="pick">
+        <label>Sound A <select id="viz-sa"></select></label>
+        <label>Sound B <select id="viz-sb"></select></label>
+        <span id="viz-pick-warn" class="warn" role="status"></span>
       </div>
+      <div class="viz-steps" id="viz-steps" role="group" aria-label="Steps"></div>
+      <div class="viz-body">
+        <canvas id="viz-canvas" class="scatter" aria-label="Scatter plot: each dot is one moment of time"></canvas>
+        <div class="viz-side">
+          <h3 id="viz-title">Step 0</h3>
+          <p id="viz-text"></p>
+          <div id="viz-mixer" class="mixer" hidden></div>
+          <div class="controls" id="viz-play-row">
+            <button type="button" class="play" id="viz-pa">Play sound A</button>
+            <button type="button" class="play" id="viz-pb">Play sound B</button>
+          </div>
+          <div id="viz-dial" hidden>
+            <label class="dial-label" for="viz-angle">Dial: <span id="viz-angle-out">0°</span></label>
+            <input type="range" id="viz-angle" min="0" max="180" step="0.5" value="0">
+            <div class="meter-head"><span>Independence meter</span><span id="viz-meter-out"></span></div>
+            <div class="meter"><div id="viz-meter-bar" class="meter-bar"></div></div>
+            <p class="muted small">The meter is highest when the dial lines up with the arms of the cross.</p>
+            <div class="hists">
+              <figure><canvas id="viz-hist1" class="hist"></canvas><figcaption>Output 1 <button type="button" class="play" id="viz-po1">Play</button></figcaption></figure>
+              <figure><canvas id="viz-hist2" class="hist"></canvas><figcaption>Output 2 <button type="button" class="play" id="viz-po2">Play</button></figcaption></figure>
+            </div>
+            <p class="muted small">The bars show how often each loudness happens. Mixing makes the bars rounder, like a smooth hill. When the dial pulls the sounds apart, the bars get spikier.</p>
+            <div class="controls"><button type="button" id="viz-auto">Let the computer turn it</button></div>
+            <p id="viz-rounds" class="rounds" role="status"></p>
+            <p id="viz-done" class="done" role="status"></p>
+            <details id="viz-strip-wrap"><summary>Show the meter for every dial position</summary>
+              <canvas id="viz-strip" class="strip" aria-label="Independence meter for every dial position from 0 to 180 degrees"></canvas>
+              <p class="muted small">Left = 0°, right = 180°. The red line is where the dial is now. There are two peaks because turning by 90° just swaps output 1 and output 2.</p>
+            </details>
+          </div>
+        </div>
+      </div>
+      <div class="controls stepper">
+        <button type="button" id="viz-back">Back</button>
+        <button type="button" id="viz-next">Next</button>
+      </div>
+    </section>
+
+    <section class="box" id="school">
+      <h2>Sounds from around school: the full demo</h2>
+      <p>Now with three sounds and three microphones. In the activity, kids record sounds in three places around school. The computer mixes them as if three microphones in one room heard everything at once, and then ICA pulls them apart.</p>
+      <p class="muted">Another way to do it: several phones record in the same room at the same time, and we unmix that set directly. That is closer to real life but messier, because sound bounces off the walls (echo) and reaches each phone at slightly different times.</p>
+
+      <h3>1 · Sounds from around school</h3>
+      <p><strong>Example sounds (openly licensed recordings, standing in until our classroom recordings are added)</strong></p>
+      <div class="controls"><button type="button" id="play-all" class="play">Play all together</button></div>
       <div id="sources" class="tracks"></div>
-    </section>
+      <p class="muted small">Kids' recordings:</p>
+      <div id="kids-slots" class="slots"></div>
 
-    <section class="box">
-      <h2>2 · Microphones in the music room</h2>
-      <p>Each mic is in a different spot, so it hears the instruments at different loudness. The numbers say how loud each instrument is at each mic (0 = can't hear it, 1 = very loud).</p>
-      <div class="matrix-wrap">
-        <table id="mix-matrix" class="matrix"></table>
-      </div>
-      <div class="controls">
-        <button type="button" id="randomize">Randomize mix</button>
-      </div>
+      <h3>2 · Microphones in one room</h3>
+      <p>Each mic is in a different spot, so it hears each sound at a different loudness. The numbers say how loud each sound is at each mic (0 = can't hear it, 1 = very loud).</p>
+      <div class="matrix-wrap"><table id="mix-matrix" class="matrix"></table></div>
+      <div class="controls"><button type="button" id="randomize" disabled>Randomize mix</button></div>
       <p id="mix-warn" class="warn" role="status"></p>
       <div id="mics" class="tracks"></div>
-    </section>
 
-    <section class="box">
-      <h2>3 · Pull the instruments apart (ICA)</h2>
-      <p>The computer only gets the three mic recordings. It never hears the instruments alone.</p>
+      <h3>3 · Pull them apart</h3>
+      <p>The computer only gets the three mic recordings. It never hears the sounds alone.</p>
       <div class="controls">
-        <button type="button" id="separate">Separate</button>
+        <button type="button" id="separate" disabled>Separate</button>
         <span id="ica-status" class="muted" role="status"></span>
       </div>
-      <p class="note">Heads up: the computer doesn't know which instrument is which or how loud it was, so it may give them back in a different order, at a different volume, or even upside down (which sounds the same). Under each track we show which instrument it sounds most like.</p>
+      <p class="note">Heads up: the computer doesn't know which sound is which or how loud it was, so it may give them back in a different order, at a different volume, or even upside down (which sounds the same). Under each track I show which sound it matches best (1.00 = a perfect match).</p>
       <div id="ica-out" class="tracks"></div>
+      <p class="muted small">This is the easy version of the problem: the computer mixes the sounds itself, perfectly in sync and with no echo, so the matches come out very close to 1.00. Real phones in a real room would not do this well.</p>
     </section>
 
-    <section class="box">
-      <h2>How it works</h2>
-      <p>Each mic recording is a mix: a bit of piano, plus a bit of drums, plus a bit of bass, with different amounts at each mic. ICA tries to undo the mix by finding tracks that are as independent as possible, meaning knowing one track tells you nothing about the others. A simpler method called PCA only looks for the loudest, most spread-out patterns, and that isn't enough to pull instruments apart. The version used here, FastICA, works in steps. First it centers and balances the recordings so they are on an even footing, then it keeps turning them, a little at a time, until each track sounds as different from the others as possible.</p>
+    <section class="box" id="training">
+      <h2>Behind the scenes: training the model</h2>
+      <p>These are real outputs from one run of FastICA (the version of ICA on this page) on the three example sounds, with the default mix from step 2 and the same starting point as the first press of “Separate”. The figures come from <code>tools/make_figures.py</code>, a numpy copy of the code in <code>ica.js</code>. I checked that both take the same 7 rounds and print the same numbers.</p>
+
+      <div class="doc-step">
+        <h3>Step 1 · Get the sounds ready</h3>
+        <p>I cut a 9-second piece from each recording, made it mono at 16,000 samples per second, and evened out the loudness with ffmpeg (<code>tools/make_audio.sh</code>). That's 144,000 numbers per sound. The three sounds are almost unrelated to begin with: the correlation between any two of them is below 0.01.</p>
+      </div>
+
+      <div class="doc-step">
+        <h3>Step 2 · Mix, center, whiten</h3>
+        <p>The script mixes the sounds with the default loudness table, moves each mic recording to the middle (centering), then stretches it to be round (whitening). After this, the only thing left to learn is how to turn.</p>
+      </div>
+
+      <div class="doc-step">
+        <h3>Step 3 · Training rounds</h3>
+        <figure>
+          <img src="process/convergence.png" alt="Two line plots. Left: how much the unmixing changed per round, from about 0.01 at round 1 to below 0.000001 at round 7. Right: the independence score rising from 0.0041 to 0.0122 and leveling off from round 5." loading="lazy" width="1260" height="450">
+          <figcaption>Each round, the computer nudges its unmixing. Left: how much it changed, round by round; it stops after round 7, when the change drops below 0.000001. Right: the independence score goes up from 0.0041 to 0.0122, and stays flat from round 5.</figcaption>
+        </figure>
+      </div>
+
+      <div class="doc-step">
+        <h3>Step 4 · Watch one output track</h3>
+        <figure>
+          <img src="process/track-snapshots.png" alt="Waveform of output 3 at round 0, round 3 and round 7, with its match to each original sound written above." loading="lazy" width="1260" height="690">
+          <figcaption>Output 3 at round 0 (just after whitening), round 3 and round 7. At round 0 it is still a mix of the kitchen (match 0.72) and the classroom (0.66). By round 7 it matches the kitchen at 1.00, and the classroom reading is gone (0.01).</figcaption>
+        </figure>
+      </div>
+
+      <div class="doc-step">
+        <h3>Step 5 · Check what it learned</h3>
+        <figure class="narrow">
+          <img src="process/unmix-times-mix.png" alt="3 by 3 heatmap. Output 1 is minus 1.00 times Classroom, output 2 is minus 1.00 times Hall, output 3 is minus 1.00 times Kitchen; every other cell is 0.01 or less." loading="lazy" width="620" height="520">
+          <figcaption>The learned unmixing times the mix (with each sound scaled to the same loudness). ICA learned to undo the mix, just in a different order: output 1 is the classroom, 2 is the hall, 3 is the kitchen. The −1 means each came out upside down, which sounds the same.</figcaption>
+        </figure>
+      </div>
+
+      <div class="doc-step">
+        <h3>Step 6 · The code for one round</h3>
+        <p>This is the loop from <code>fastICA()</code> in <code>ica.js</code> that runs once per round:</p>
+<pre><code>var Wn = [];
+for (i = 0; i &lt; m; i++) {
+  for (t = 0; t &lt; n; t++) {                       // wz = this output, right now
+    for (var v = 0, j = 0; j &lt; m; j++) v += W[i][j] * Z[j][t];
+    wz[t] = v;
+  }
+  var row = new Array(m).fill(0), gp = 0;
+  for (t = 0; t &lt; n; t++) {                       // push w toward a less bell-shaped output
+    var g = Math.tanh(wz[t]);
+    gp += 1 - g * g;
+    for (j = 0; j &lt; m; j++) row[j] += Z[j][t] * g;
+  }
+  for (j = 0; j &lt; m; j++) row[j] = row[j] / n - (gp / n) * W[i][j];
+  Wn.push(row);
+}
+Wn = symDecorrelate(Wn);                          // keep outputs at right angles
+var change = 0;                                   // how much did the dial move this round?
+for (i = 0; i &lt; m; i++) {
+  for (var dot = 0, j = 0; j &lt; m; j++) dot += Wn[i][j] * W[i][j];
+  change = Math.max(change, Math.abs(Math.abs(dot) - 1));
+}
+W = Wn;
+if (opts.onRound) opts.onRound(it, W, change);
+if (change &lt; tol) { converged = true; break; }</code></pre>
+        <p class="muted small">In plain words: for each output, look at what it sounds like right now, nudge it toward a spikier, less bell-shaped sound, keep the outputs at right angles to each other, and stop when the nudge gets tiny.</p>
+      </div>
+
+      <div class="doc-step">
+        <h3>Step 7 · Test that it works every time</h3>
+        <p>One good run could be luck, so <code>node test/ica-test.js</code> tries 12 random 3-sound mixes and 18 random 2-sound mixes. This is its real output:</p>
+<pre class="log">Sources: Kitchen, Hall, Classroom | 144000 samples each at 16000 Hz (9 s)
+Excess kurtosis (0 = bell curve): Kitchen 9.14, Hall 2.55, Classroom 5.66
+Correlation between sources: K-H -0.0025, K-C 0.0082, H-C -0.0013
+
+3 sounds, 3 mics: 12 random mixes (weights 0.1-1.0)
+mix  1 det=-0.064 rounds=7 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000, out3=Hall |r|=1.0000 PASS
+mix  2 det=0.220 rounds=9 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  3 det=-0.185 rounds=7 out1=Classroom |r|=0.9999, out2=Kitchen |r|=1.0000, out3=Hall |r|=1.0000 PASS
+mix  4 det=-0.094 rounds=9 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  5 det=-0.110 rounds=10 out1=Classroom |r|=0.9999, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  6 det=0.219 rounds=11 out1=Hall |r|=1.0000, out2=Kitchen |r|=1.0000, out3=Classroom |r|=1.0000 PASS
+mix  7 det=0.059 rounds=12 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000, out3=Hall |r|=1.0000 PASS
+mix  8 det=0.124 rounds=8 out1=Hall |r|=1.0000, out2=Classroom |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  9 det=0.121 rounds=8 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix 10 det=0.060 rounds=6 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix 11 det=0.232 rounds=17 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000, out3=Classroom |r|=1.0000 PASS
+mix 12 det=-0.302 rounds=10 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000, out3=Hall |r|=1.0000 PASS
+Per-source |r| over the 12 mixes: Kitchen min 1.0000 / mean 1.0000; Hall min 1.0000 / mean 1.0000; Classroom min 0.9999 / mean 1.0000
+page default 3x3 mix det=0.493 rounds=7 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+
+2 sounds, 2 mics: every pair, 6 random mixes each
+Kitchen+Hall mix 1 det=0.250 rounds=9 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Hall mix 2 det=-0.795 rounds=5 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Hall mix 3 det=0.114 rounds=7 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Hall mix 4 det=0.379 rounds=7 out1=Hall |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Hall mix 5 det=-0.216 rounds=11 out1=Hall |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Hall mix 6 det=0.325 rounds=6 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Classroom mix 1 det=0.111 rounds=5 out1=Classroom |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Classroom mix 2 det=0.369 rounds=10 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Kitchen+Classroom mix 3 det=0.140 rounds=9 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Kitchen+Classroom mix 4 det=0.253 rounds=4 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Kitchen+Classroom mix 5 det=0.112 rounds=3 out1=Classroom |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Classroom mix 6 det=-0.288 rounds=4 out1=Classroom |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Hall+Classroom mix 1 det=-0.501 rounds=3 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 2 det=0.107 rounds=5 out1=Hall |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Hall+Classroom mix 3 det=-0.217 rounds=5 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 4 det=-0.178 rounds=6 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 5 det=0.173 rounds=9 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 6 det=-0.315 rounds=3 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Per-source |r| over the 18 two-sound mixes: Kitchen min 1.0000 / mean 1.0000; Hall min 1.0000 / mean 1.0000; Classroom min 1.0000 / mean 1.0000
+visualizer default (Kitchen+Classroom, 2x2) det=0.630 rounds=3 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+
+ALL PASS (pass = every output matches a different source with |r| &gt; 0.95)</pre>
+      </div>
     </section>
 
-    <section class="box">
+    <section class="box" id="ai">
+      <h2>Is this AI?</h2>
+      <ul class="plain-list">
+        <li><strong>It learns from data, without labels.</strong> Nobody tells it which sound is which. The rounds you saw above are its training.</li>
+        <li><strong>Real products face the same problem.</strong> Voice assistants and hearing aids also need to pull one sound out of a mix (this is called source separation). Today they often use deep learning for it.</li>
+        <li><strong>You can look inside it.</strong> What ICA learns is a small table of numbers (a 3×3 unmixing table here) that you can print and check, like in step 5 above. That makes it a nice first example of explainable AI, which is what <a href="https://lucylyu.surge.sh/#research">my research</a> is about (see also <a href="https://lucylyu.surge.sh/assets/docs/Lyu-Deng-SIGCSE2027-Scaffolding-XAI-K12.pdf">my paper on scaffolding explainable AI for K-12</a>).</li>
+      </ul>
+    </section>
+
+    <section class="box" id="uses">
       <h2>Where ICA shows up in real life</h2>
       <ul class="plain-list">
         <li>Pulling a voice out of background noise, for example in hearing aids or voice assistants.</li>
-        <li>Separating singing from music, like making a karaoke track.</li>
+        <li>Separating the singing from the music, like making a karaoke track.</li>
         <li>Cleaning brain-wave recordings (EEG) by removing the signals made by eye blinks.</li>
         <li>Separating overlapping signals picked up by sensors, or mixed together in images.</li>
       </ul>
     </section>
 
-    <section class="box">
+    <section class="box" id="challenges">
       <h2>Challenges &amp; how I solved them</h2>
-      <p class="placeholder">[Lucy to fill in: problems faced and how I solved them]</p>
+      <h3>Starting from zero</h3>
+      <p>Some students had no background to build on, and without any prior knowledge they couldn't grasp what ICA was at all.</p>
+      <p class="placeholder">[Lucy to fill in: how I addressed this]</p>
+      <p class="placeholder">[More challenges to be added]</p>
     </section>
 
-    <section class="box">
+    <section class="box" id="learners">
       <h2>What I saw with learners</h2>
       <p class="placeholder">[Results with learners to be added]</p>
     </section>
 
-    <footer class="site-footer">
-      <p>All sounds on this page are synthesized in your browser; no recordings are used.</p>
+    <footer class="site-footer box">
+      <h2>Sound credits</h2>
+      <p>Example sounds, used until our classroom recordings are added. Each is a 9-second excerpt, made mono, 16 kHz, and loudness-normalized. Details in <a href="audio/credits.json">audio/credits.json</a>.</p>
+      <ul class="plain-list credits">
+        <li><strong>Kitchen:</strong> “Kitchen Tidy-up” by starlite (via PDSounds), public domain. <a href="https://commons.wikimedia.org/wiki/File:Kitchen_tidy_up.ogg">Wikimedia Commons</a>. Excerpt 0:22–0:31.</li>
+        <li><strong>Hall:</strong> “Koulu-ambience1” (a school hallway in Helsinki) by Suihkuturbiini8k, CC0 1.0. <a href="https://commons.wikimedia.org/wiki/File:Koulu-ambience1.wav">Wikimedia Commons</a>. Excerpt 0:05–0:14.</li>
+        <li><strong>Classroom:</strong> <em>The Aesop for Children</em>, section 32 (“The Hare and the Tortoise” and others), read by a LibriVox volunteer, public domain. <a href="https://librivox.org/the-aesop-for-children-by-aesop/">LibriVox</a> · <a href="https://archive.org/download/aesopforchildren_1308_librivox/theaesopforchildren_32_aesop_64kb.mp3">file on archive.org</a>. Excerpt 0:40–0:49.</li>
+      </ul>
+      <p class="muted">Made by Lucy Lyu. Code: <a href="https://github.com/ChuqingLyu/ica-unmixing-sounds">github.com/ChuqingLyu/ica-unmixing-sounds</a> (MIT).</p>
     </footer>
   </main>
   <script src="ica.js"></script>

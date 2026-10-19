@@ -1,0 +1,33 @@
+{
+  "note": "Example sounds: openly licensed recordings standing in until our classroom recordings are added. They were not recorded by the kids. Each is a 9-second excerpt, converted to mono, 16 kHz, loudness-normalized (ffmpeg loudnorm, I=-20 LUFS), and saved as 40 kbps MP3 by tools/make_audio.sh.",
+  "clips": [
+    {
+      "file": "kitchen.mp3",
+      "stands_in_for": "School kitchen / canteen (dishes, pots, clatter)",
+      "title": "Kitchen Tidy-up (Kitchen tidy up.ogg)",
+      "author": "starlite (via PDSounds)",
+      "license": "Public domain",
+      "source": "https://commons.wikimedia.org/wiki/File:Kitchen_tidy_up.ogg",
+      "excerpt": "22.0 s to 31.0 s of 57.2 s"
+    },
+    {
+      "file": "hall.mp3",
+      "stands_in_for": "School hall / corridor (footsteps, chatter)",
+      "title": "Koulu-ambience1.wav (hallway of Suutarinkylä elementary school, Helsinki, recorded 21 Nov 2023)",
+      "author": "Suihkuturbiini8k",
+      "license": "CC0 1.0 (public domain dedication)",
+      "source": "https://commons.wikimedia.org/wiki/File:Koulu-ambience1.wav",
+      "excerpt": "5.0 s to 14.0 s of 15.4 s"
+    },
+    {
+      "file": "classroom.mp3",
+      "stands_in_for": "Classroom (someone reading aloud)",
+      "title": "The Aesop for Children, section 32: Fables 125-128 (The Hare and the Tortoise; ...), LibriVox recording",
+      "author": "A LibriVox Volunteer (reader); text by Aesop, from The Aesop for Children (1919)",
+      "license": "Public domain (LibriVox; Public Domain Mark 1.0 on archive.org)",
+      "source": "https://librivox.org/the-aesop-for-children-by-aesop/",
+      "file_url": "https://archive.org/download/aesopforchildren_1308_librivox/theaesopforchildren_32_aesop_64kb.mp3",
+      "excerpt": "40.0 s to 49.0 s of 7:04"
+    }
+  ]
+}

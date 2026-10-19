@@ -1,0 +1,43 @@
+Sources: Kitchen, Hall, Classroom | 144000 samples each at 16000 Hz (9 s)
+Excess kurtosis (0 = bell curve): Kitchen 9.14, Hall 2.55, Classroom 5.66
+Correlation between sources: K-H -0.0025, K-C 0.0082, H-C -0.0013
+
+3 sounds, 3 mics: 12 random mixes (weights 0.1-1.0)
+mix  1 det=-0.064 rounds=7 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000, out3=Hall |r|=1.0000 PASS
+mix  2 det=0.220 rounds=9 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  3 det=-0.185 rounds=7 out1=Classroom |r|=0.9999, out2=Kitchen |r|=1.0000, out3=Hall |r|=1.0000 PASS
+mix  4 det=-0.094 rounds=9 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  5 det=-0.110 rounds=10 out1=Classroom |r|=0.9999, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  6 det=0.219 rounds=11 out1=Hall |r|=1.0000, out2=Kitchen |r|=1.0000, out3=Classroom |r|=1.0000 PASS
+mix  7 det=0.059 rounds=12 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000, out3=Hall |r|=1.0000 PASS
+mix  8 det=0.124 rounds=8 out1=Hall |r|=1.0000, out2=Classroom |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix  9 det=0.121 rounds=8 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix 10 det=0.060 rounds=6 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+mix 11 det=0.232 rounds=17 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000, out3=Classroom |r|=1.0000 PASS
+mix 12 det=-0.302 rounds=10 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000, out3=Hall |r|=1.0000 PASS
+Per-source |r| over the 12 mixes: Kitchen min 1.0000 / mean 1.0000; Hall min 1.0000 / mean 1.0000; Classroom min 0.9999 / mean 1.0000
+page default 3x3 mix det=0.493 rounds=7 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000, out3=Kitchen |r|=1.0000 PASS
+
+2 sounds, 2 mics: every pair, 6 random mixes each
+Kitchen+Hall mix 1 det=0.250 rounds=9 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Hall mix 2 det=-0.795 rounds=5 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Hall mix 3 det=0.114 rounds=7 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Hall mix 4 det=0.379 rounds=7 out1=Hall |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Hall mix 5 det=-0.216 rounds=11 out1=Hall |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Hall mix 6 det=0.325 rounds=6 out1=Kitchen |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Kitchen+Classroom mix 1 det=0.111 rounds=5 out1=Classroom |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Classroom mix 2 det=0.369 rounds=10 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Kitchen+Classroom mix 3 det=0.140 rounds=9 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Kitchen+Classroom mix 4 det=0.253 rounds=4 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Kitchen+Classroom mix 5 det=0.112 rounds=3 out1=Classroom |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Kitchen+Classroom mix 6 det=-0.288 rounds=4 out1=Classroom |r|=1.0000, out2=Kitchen |r|=1.0000 PASS
+Hall+Classroom mix 1 det=-0.501 rounds=3 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 2 det=0.107 rounds=5 out1=Hall |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+Hall+Classroom mix 3 det=-0.217 rounds=5 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 4 det=-0.178 rounds=6 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 5 det=0.173 rounds=9 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Hall+Classroom mix 6 det=-0.315 rounds=3 out1=Classroom |r|=1.0000, out2=Hall |r|=1.0000 PASS
+Per-source |r| over the 18 two-sound mixes: Kitchen min 1.0000 / mean 1.0000; Hall min 1.0000 / mean 1.0000; Classroom min 1.0000 / mean 1.0000
+visualizer default (Kitchen+Classroom, 2x2) det=0.630 rounds=3 out1=Kitchen |r|=1.0000, out2=Classroom |r|=1.0000 PASS
+
+ALL PASS (pass = every output matches a different source with |r| > 0.95)
