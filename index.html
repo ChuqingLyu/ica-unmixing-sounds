@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unmixing Sounds · ICA demo · Lucy Lyu</title>
-  <meta name="description" content="A small ICA demo: separating mixed sounds, the cocktail party problem.">
+  <title>Unmixing the Class Band · ICA demo · Lucy Lyu</title>
+  <meta name="description" content="A small ICA demo for music class: pulling instruments back out of mixed recordings.">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="page">
     <header class="site-header">
       <div>
-        <h1>Unmixing Sounds</h1>
-        <p class="subtitle">A small ICA demo: separating mixed sounds, the cocktail party problem</p>
+        <h1>Unmixing the Class Band</h1>
+        <p class="subtitle">A small ICA demo for music class: pulling instruments back out of mixed recordings</p>
       </div>
       <a class="gh-link" href="https://github.com/ChuqingLyu/ica-unmixing-sounds" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
@@ -22,20 +22,32 @@
 
     <section class="box">
       <h2>About this project</h2>
-      <p>I built this to help K-12 learners see an idea from machine learning that they normally can't see. When several sounds are recorded together, every microphone hears a blend of all of them. Independent Component Analysis (ICA) can pull the sounds apart again, using only the mixtures.</p>
-      <p>This connects to my research on making AI explainable to kids through hands-on, constructionist interaction. Instead of reading formulas, learners change the mix, listen, press a button, and compare what comes out with what went in.</p>
-      <p>It is a standalone project, not a pre-lesson: everything you need is on this page.</p>
+      <p>I made this for music class. Kids already practice picking out instruments by ear when they listen to a song. Here they can watch a computer try to do the same thing.</p>
+      <p>It is part of my research on helping kids understand AI by trying it with their own hands, inside subjects they already take. You change the mix, listen, and compare. No formulas needed.</p>
     </section>
 
     <section class="box">
-      <h2>1 · Sources</h2>
-      <p>Three sounds, each 4 seconds long, made right here in your browser.</p>
+      <h2>What is ICA?</h2>
+      <p>ICA stands for Independent Component Analysis. When several instruments play at once, each microphone records a blend of all of them. ICA is a way for a computer to find the separate sounds hidden inside those blends, using only the recordings. It works because each instrument does its own thing, so the computer looks for tracks that don't depend on each other. It's a bit like picking out the piano in a song by ear.</p>
+    </section>
+
+    <section class="box">
+      <h2>The story</h2>
+      <p>Your class band plays a song together. Three microphones around the music room each pick up all the instruments at once. Can we get each instrument's own track back, using only the microphone recordings?</p>
+    </section>
+
+    <section class="box">
+      <h2>1 · The band (each instrument alone)</h2>
+      <p>This is what each instrument sounds like by itself. The song is “Twinkle Twinkle Little Star.”</p>
+      <div class="controls">
+        <button type="button" id="play-all" class="play">Play all together</button>
+      </div>
       <div id="sources" class="tracks"></div>
     </section>
 
     <section class="box">
-      <h2>2 · Microphones (mixtures)</h2>
-      <p>Each microphone hears all three sounds at once. The numbers say how loud each sound is at each microphone (0 to 1).</p>
+      <h2>2 · Microphones in the music room</h2>
+      <p>Each mic is in a different spot, so it hears the instruments at different loudness. The numbers say how loud each instrument is at each mic (0 = can't hear it, 1 = very loud).</p>
       <div class="matrix-wrap">
         <table id="mix-matrix" class="matrix"></table>
       </div>
@@ -47,19 +59,24 @@
     </section>
 
     <section class="box">
-      <h2>3 · ICA output</h2>
-      <p>ICA only gets the three microphone recordings. It never sees the original sounds.</p>
+      <h2>3 · Pull the instruments apart (ICA)</h2>
+      <p>The computer only gets the three mic recordings. It never hears the instruments alone.</p>
       <div class="controls">
         <button type="button" id="separate">Separate</button>
         <span id="ica-status" class="muted" role="status"></span>
       </div>
-      <p class="note">Note: ICA can't know the original order or loudness (or sign), so components may come out shuffled or flipped. To help you compare, each one shows the source it matches best.</p>
+      <p class="note">Heads up: the computer doesn't know which instrument is which or how loud it was, so it may give them back in a different order, at a different volume, or even upside down (which sounds the same). Under each track we show which instrument it sounds most like.</p>
       <div id="ica-out" class="tracks"></div>
     </section>
 
     <section class="box">
       <h2>How it works</h2>
-      <p>Each microphone recording is a weighted sum of the sources: x = A · s, where A holds the mixing weights. ICA looks for a way to recombine the recordings so that the results are as statistically independent, and as non-Gaussian, as possible, because mixing real sounds makes them look more Gaussian. PCA is different: it finds uncorrelated directions of maximum variance, and that alone is not enough to unmix the sounds. FastICA works in three steps: it centers the data (subtracts the mean), whitens it (rescales so the signals are uncorrelated with equal variance), and then repeatedly updates a set of unmixing directions with a tanh rule until they stop changing.</p>
+      <p>Each mic recording is a mix: a bit of piano, plus a bit of drums, plus a bit of bass, with different amounts at each mic. ICA tries to undo the mix by finding tracks that are as independent as possible, meaning knowing one track tells you nothing about the others. A simpler method called PCA only looks for the loudest, most spread-out patterns, and that isn't enough to pull instruments apart. The version used here, FastICA, works in steps. First it centers and balances the recordings so they are on an even footing, then it keeps turning them, a little at a time, until each track sounds as different from the others as possible.</p>
+    </section>
+
+    <section class="box">
+      <h2>Where the idea came from</h2>
+      <p class="placeholder">[Lucy to fill in: how I got the idea for this project]</p>
     </section>
 
     <section class="box">

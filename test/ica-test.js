@@ -1,22 +1,21 @@
 const ICA = require('../ica.js');
 const S = ICA.makeSources();
-const names=['melody','beat','siren'];
-let fails=0;
-for (const seed of [11,22,33,44,55]) {
+const names=['piano','drums','bass'];
+console.log('N',S[0].length,'SR',ICA.SR,'source corr p-d',ICA.corr(S[0],S[1]).toFixed(4),'p-b',ICA.corr(S[0],S[2]).toFixed(4),'d-b',ICA.corr(S[1],S[2]).toFixed(4));
+let fails=0,minAbs=1, runs=0;
+const seeds=[...Array(12).keys()].map(i=>i*7+3);
+for (const seed of seeds) {
   const r = ICA.rng(seed); let A;
   do { A=[0,1,2].map(()=>[0,1,2].map(()=>0.1+0.9*r())); } while (Math.abs(ICA.det3(A))<0.05);
-  const X = ICA.mix(A,S);
-  const t0=Date.now();
-  const res = ICA.fastICA(X,{maxIter:200,seed});
+  const res = ICA.fastICA(ICA.mix(A,S),{maxIter:200,seed:seed+1});
   const m = ICA.matchComponents(res.Y,S);
-  const distinct = new Set(m.map(x=>x.source)).size===3;
-  const ok = distinct && m.every(x=>x.abs>0.9);
-  if(!ok) fails++;
-  console.log(`seed ${seed} det=${ICA.det3(A).toFixed(3)} iters=${res.iterations} conv=${res.converged} ${Date.now()-t0}ms ->`,
-    m.map((x,i)=>`IC${i+1}≈S${x.source+1}(${names[x.source]}) r=${x.corr.toFixed(6)}`).join(', '), ok?'PASS':'FAIL');
+  const ok = new Set(m.map(x=>x.source)).size===3 && m.every(x=>x.abs>0.9);
+  runs++; if(!ok) fails++; m.forEach(x=>minAbs=Math.min(minAbs,x.abs));
+  console.log(`seed ${seed} det=${ICA.det3(A).toFixed(3)} iters=${res.iterations} conv=${res.converged} ->`,
+    m.map((x,i)=>`IC${i+1}≈${names[x.source]} r=${x.corr.toFixed(4)}`).join(', '), ok?'PASS':'FAIL');
 }
-// default matrix from page
-const A=[[1.0,0.6,0.4],[0.5,1.0,0.7],[0.3,0.5,1.0]];
-const res=ICA.fastICA(ICA.mix(A,S),{seed:1}); const m=ICA.matchComponents(res.Y,S);
-console.log('default A iters',res.iterations, m.map((x,i)=>`IC${i+1}≈S${x.source+1} |r|=${x.abs.toFixed(6)}`).join(', '));
+console.log(`runs ${runs} fails ${fails} min|r| ${minAbs.toFixed(4)}`);
+const A0=[[1.0,0.35,0.45],[0.3,1.0,0.4],[0.6,0.55,0.8]];
+const r0=ICA.fastICA(ICA.mix(A0,S),{seed:1}); const m0=ICA.matchComponents(r0.Y,S);
+console.log('default page mix det',ICA.det3(A0).toFixed(3),'iters',r0.iterations, m0.map((x,i)=>`IC${i+1}≈${names[x.source]} r=${x.corr.toFixed(4)}`).join(', '));
 process.exit(fails?1:0);

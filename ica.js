@@ -3,8 +3,10 @@
 (function (root) {
   'use strict';
 
-  var SR = 8000;          // sample rate (Hz)
-  var DUR = 4;            // seconds
+  var SR = 16000;         // sample rate (Hz)
+  var BPM = 120;          // tempo
+  var BEAT = 60 / BPM;    // seconds per beat
+  var DUR = 8;            // 16 beats = 4 bars of 4/4
   var N = SR * DUR;
 
   // ---------- small helpers ----------
@@ -29,50 +31,73 @@
     return y;
   }
 
-  // ---------- sources ----------
-  function makeSources() {
-    var melody = new Float32Array(N);
-    var beat = new Float32Array(N);
-    var siren = new Float32Array(N);
-    var i, t;
+  // ---------- sources: a tiny class band playing "Twinkle Twinkle Little Star" ----------
+  // Melody notes as [MIDI note, start beat, length in beats]. Key of C, 120 BPM.
+  var MELODY = [
+    [60, 0, 1], [60, 1, 1], [67, 2, 1], [67, 3, 1], [69, 4, 1], [69, 5, 1], [67, 6, 2],
+    [65, 8, 1], [65, 9, 1], [64, 10, 1], [64, 11, 1], [62, 12, 1], [62, 13, 1], [60, 14, 2]
+  ];
+  // Bass: root notes (two beats each) under the melody: C C F C | F C G C
+  var BASS = [
+    [36, 0, 2], [36, 2, 2], [41, 4, 2], [36, 6, 2],
+    [41, 8, 2], [36, 10, 2], [43, 12, 2], [36, 14, 2]
+  ];
 
-    // (i) sine-tone melody: eight notes, 0.5 s each, soft attack/release
-    var notes = [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880.0, 523.25];
-    var noteLen = SR / 2;
-    for (i = 0; i < N; i++) {
-      var k = Math.floor(i / noteLen) % notes.length;
-      var p = (i % noteLen) / noteLen;
-      var env = Math.min(1, p / 0.05) * Math.min(1, (1 - p) / 0.15);
-      t = i / SR;
-      melody[i] = env * Math.sin(2 * Math.PI * notes[k] * t);
+  function midiHz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+
+  // Add one decaying, harmonic note into buffer `out`.
+  function addNote(out, hz, t0, len, harmonics, tau, attack) {
+    var i0 = Math.round(t0 * SR), n = Math.round(len * SR), i, h;
+    for (i = 0; i < n && i0 + i < out.length; i++) {
+      var t = i / SR;
+      var env = Math.min(1, t / attack) * Math.exp(-t / tau) * Math.min(1, (n - i) / (0.02 * SR));
+      var v = 0;
+      for (h = 0; h < harmonics.length; h++) v += harmonics[h] * Math.sin(2 * Math.PI * hz * (h + 1) * t);
+      out[i0 + i] += env * v;
     }
+  }
 
-    // (ii) percussive beat: decaying noise bursts on a rhythm (8th-note grid)
+  function makeSources() {
+    var piano = new Float64Array(N), drums = new Float64Array(N), bass = new Float64Array(N);
+    var i, k;
+
+    // Piano (melody): a few harmonics, quick attack, exponential decay per note.
+    MELODY.forEach(function (nt) {
+      addNote(piano, midiHz(nt[0]), nt[1] * BEAT, nt[2] * BEAT, [1, 0.45, 0.22, 0.1], 0.35, 0.004);
+    });
+
+    // Bass (low notes): low plucked tone, slightly behind the beat like a real player.
+    BASS.forEach(function (nt) {
+      addNote(bass, midiHz(nt[0]), nt[1] * BEAT + 0.03, nt[2] * BEAT - 0.03, [1, 0.6, 0.3, 0.15], 0.5, 0.01);
+    });
+
+    // Drums (beat): kick on 1 and 3, snare on 2 and 4, soft hi-hat on the off-beats.
     var r = rng(7);
-    var pattern = [1, 0, 1, 1, 0, 1, 0, 1]; // per 0.25 s step
-    var step = SR / 4;
-    for (i = 0; i < N; i++) {
-      var s = Math.floor(i / step);
-      var j = i % step;
-      if (pattern[s % pattern.length]) {
-        var accent = (s % 4 === 0) ? 1.0 : 0.6;
-        beat[i] = accent * Math.exp(-j / (SR * 0.025)) * (2 * r() - 1);
-      } else {
-        beat[i] = 0.0;
+    for (k = 0; k < 16; k++) {
+      var i0 = Math.round(k * BEAT * SR), j, len;
+      if (k % 2 === 0) {                        // kick: low sine thump with falling pitch
+        len = Math.round(0.25 * SR);
+        var ph = 0;
+        for (j = 0; j < len && i0 + j < N; j++) {
+          var t = j / SR, f = 50 + 70 * Math.exp(-t / 0.04);
+          ph += 2 * Math.PI * f / SR;
+          drums[i0 + j] += Math.exp(-t / 0.09) * Math.sin(ph);
+        }
+      } else {                                  // snare: short noise burst
+        len = Math.round(0.18 * SR);
+        for (j = 0; j < len && i0 + j < N; j++)
+          drums[i0 + j] += 0.8 * Math.exp(-(j / SR) / 0.05) * (2 * r() - 1);
+      }
+      var h0 = Math.round((k + 0.5) * BEAT * SR), prev = 0;  // hi-hat: high, very short tick
+      len = Math.round(0.04 * SR);
+      for (j = 0; j < len && h0 + j < N; j++) {
+        var w = 2 * r() - 1;
+        drums[h0 + j] += 0.25 * Math.exp(-(j / SR) / 0.01) * (w - prev);
+        prev = w;
       }
     }
 
-    // (iii) siren: sawtooth whose pitch sweeps up and down
-    var phase = 0;
-    for (i = 0; i < N; i++) {
-      t = i / SR;
-      var f = 420 + 180 * Math.sin(2 * Math.PI * 0.5 * t);
-      phase += f / SR;
-      phase -= Math.floor(phase);
-      siren[i] = 2 * phase - 1;
-    }
-
-    return [normalizePeak(melody, 0.9), normalizePeak(beat, 0.9), normalizePeak(siren, 0.9)];
+    return [normalizePeak(piano, 0.9), normalizePeak(drums, 0.9), normalizePeak(bass, 0.9)];
   }
 
   // ---------- mixing ----------
@@ -292,9 +317,11 @@
   root.ICA = ICA;
 
   // ==================== Browser UI ====================
-  var NAMES = ['melody', 'beat', 'siren'];
+  var NAMES = ['Piano (melody)', 'Drums (beat)', 'Bass (low notes)'];
+  var SHORT = ['Piano', 'Drums', 'Bass'];
+  var MICS = ['Mic near piano', 'Mic near drums', 'Mic at the back'];
   var sources = makeSources();
-  var A = [[1.0, 0.6, 0.4], [0.5, 1.0, 0.7], [0.3, 0.5, 1.0]];
+  var A = [[1.0, 0.35, 0.45], [0.3, 1.0, 0.4], [0.6, 0.55, 0.8]];
   var mixtures = null;
   var audioCtx = null, playing = null;
 
@@ -354,13 +381,13 @@
 
   function buildMatrix() {
     var tbl = $('mix-matrix'), html = '<tr><th></th>', i, j;
-    for (j = 0; j < 3; j++) html += '<th scope="col">Source ' + (j + 1) + '<br><span class="muted">' + NAMES[j] + '</span></th>';
+    for (j = 0; j < 3; j++) html += '<th scope="col">' + SHORT[j] + '</th>';
     html += '</tr>';
     for (i = 0; i < 3; i++) {
-      html += '<tr><th scope="row">Mic ' + (i + 1) + '</th>';
+      html += '<tr><th scope="row">' + MICS[i] + '</th>';
       for (j = 0; j < 3; j++)
         html += '<td><input type="number" min="0" max="1" step="0.05" id="a' + i + j + '" value="' +
-          A[i][j].toFixed(2) + '" aria-label="Weight of source ' + (j + 1) + ' in mic ' + (i + 1) + '"></td>';
+          A[i][j].toFixed(2) + '" aria-label="How loud ' + SHORT[j] + ' is at the ' + MICS[i].toLowerCase() + '"></td>';
       html += '</tr>';
     }
     tbl.innerHTML = html;
@@ -381,14 +408,14 @@
     for (var i = 0; i < 3; i++) drawWave($('mic' + i + '-wave'), mixtures[i]);
     var warn = $('mix-warn');
     warn.textContent = Math.abs(det3(A)) < 1e-3
-      ? 'These weights make two microphones hear (almost) the same thing, so the sounds cannot be unmixed. Try changing a number.'
+      ? 'With these numbers, the mics hear (almost) the same blend, so the instruments can\'t be pulled apart. Try changing a number.'
       : '';
     clearOutput();
   }
 
   function clearOutput() {
     var out = $('ica-out');
-    out.innerHTML = '<p class="muted">Press “Separate” to run ICA on the three microphone recordings.</p>';
+    out.innerHTML = '<p class="muted">Press “Separate” to let the computer pull the instruments apart.</p>';
     $('ica-status').textContent = '';
   }
 
@@ -400,23 +427,23 @@
     out.innerHTML = '';
     res.Y.forEach(function (y, i) {
       var mt = match[i];
-      var note = '≈ Source ' + (mt.source + 1) + ' (' + NAMES[mt.source] + '), match ' + mt.abs.toFixed(2) +
-        (mt.corr < 0 ? ' (flipped upside down)' : '');
-      out.appendChild(row('Component ' + (i + 1), 'ic' + i, note));
+      var note = 'Sounds like: ' + NAMES[mt.source] + ', match ' + mt.abs.toFixed(2) +
+        (mt.corr < 0 ? ' (came out upside down, which sounds the same)' : '');
+      out.appendChild(row('Track ' + (i + 1), 'ic' + i, note));
       var yn = normalizePeak(y, 0.9);
       drawWave($('ic' + i + '-wave'), yn);
       $('ic' + i + '-play').addEventListener('click', function () { play(yn); });
     });
-    status.textContent = 'FastICA ' + (res.converged ? 'converged after ' : 'stopped after ') +
-      res.iterations + ' iteration' + (res.iterations === 1 ? '' : 's') + '.';
+    status.textContent = (res.converged ? 'Done! ' : 'Stopped. ') + 'It took ' + res.iterations +
+      ' round' + (res.iterations === 1 ? '' : 's') + ' of adjusting.';
     root.__icaResult = { iterations: res.iterations, converged: res.converged, match: match };
   }
 
   function init() {
     var srcBox = $('sources'), micBox = $('mics'), i;
     for (i = 0; i < 3; i++) {
-      srcBox.appendChild(row('Source ' + (i + 1) + ' · ' + NAMES[i], 'src' + i));
-      micBox.appendChild(row('Microphone ' + (i + 1), 'mic' + i));
+      srcBox.appendChild(row(NAMES[i], 'src' + i));
+      micBox.appendChild(row(MICS[i], 'mic' + i));
     }
     for (i = 0; i < 3; i++) (function (i) {
       drawWave($('src' + i + '-wave'), sources[i]);
@@ -426,6 +453,10 @@
     buildMatrix();
     updateMixtures();
 
+    var band = new Float32Array(sources[0].length);
+    for (i = 0; i < band.length; i++) band[i] = sources[0][i] + sources[1][i] + sources[2][i];
+    $('play-all').addEventListener('click', function () { play(band); });
+
     $('randomize').addEventListener('click', function () {
       var r = Math.random;
       do {
@@ -434,7 +465,10 @@
       buildMatrix();
       updateMixtures();
     });
-    $('separate').addEventListener('click', separate);
+    $('separate').addEventListener('click', function () {
+      $('ica-status').textContent = 'Working…';
+      setTimeout(separate, 30);   // let the "Working…" text show first
+    });
 
     var resizeTimer;
     window.addEventListener('resize', function () {
