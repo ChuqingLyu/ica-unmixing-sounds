@@ -134,3 +134,6 @@ button.play:hover { background: #eef2f7; }
   .matrix th, .matrix td { padding: 3px 4px; }
   .matrix input { width: 3.8em; }
 }
+
+.plain-list { margin: 0; padding-left: 20px; }
+.plain-list li { margin-bottom: 4px; }
