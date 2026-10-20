@@ -48,7 +48,7 @@ code { font-family: var(--mono); font-size: 0.88em; color: #ffd7a1; background: 
 }
 #hero-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .hero-inner {
-  position: relative; z-index: 1; width: 100%; max-width: 1080px; margin: 0 auto;
+  position: relative; z-index: 1; width: 100%; max-width: 1200px; margin: 0 auto;
   padding: 64px 24px 0;
 }
 .hero h1 {
@@ -71,10 +71,10 @@ code { font-family: var(--mono); font-size: 0.88em; color: #ffd7a1; background: 
 .hero-scope { position: relative; height: clamp(250px, 40vh, 380px); flex: none; margin-top: 18px; }
 
 /* ---------------- layout ---------------- */
-.page { max-width: 1080px; margin: 0 auto; padding: 26px 24px 48px; counter-reset: ch; }
+.page { max-width: 1200px; margin: 0 auto; padding: 26px 24px 48px; counter-reset: ch; }
 h1, h2, h3 { font-family: var(--sans); }
 h2 { margin: 0 0 14px; font-size: clamp(22px, 2.6vw, 28px); line-height: 1.2; letter-spacing: -0.015em; color: #f4f7fb; font-weight: 750; }
-main > section.box > h2::before, .site-footer > h2::before {
+main section.box > h2::before, .site-footer > h2::before {
   counter-increment: ch; content: "CH." counter(ch, decimal-leading-zero);
   display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
   font: 600 12px/1 var(--mono); letter-spacing: 0.14em; color: var(--dim);
@@ -295,8 +295,8 @@ pre.log { font-size: 11.5px; max-height: 440px; color: #a9b5c5; }
 .credits li:nth-child(3)::before { background: var(--classroom); box-shadow: 0 0 6px var(--classroom); }
 
 /* scroll-in reveal (only when JS turns it on and motion is OK) */
-.reveal-on .page > .box:not(.toc) { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
-.reveal-on .page > .box.in { opacity: 1; transform: none; }
+.reveal-on .page .box:not(.toc) { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+.reveal-on .page .box.in { opacity: 1; transform: none; }
 
 @media (max-width: 760px) {
   .viz-body { grid-template-columns: 1fr; }
@@ -320,4 +320,54 @@ pre.log { font-size: 11.5px; max-height: 440px; color: #a9b5c5; }
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
 }
-.page > section { scroll-margin-top: 96px; }
+.page section { scroll-margin-top: 96px; }
+
+/* ---------------- two-column layout ---------------- */
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; margin-bottom: 22px; align-items: stretch; }
+.row > .box { margin-bottom: 0; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.step-row { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 28px; align-items: start; padding: 18px 0; border-top: 1px solid var(--line); }
+.step-row:first-of-type { border-top: 0; padding-top: 0; }
+.step-row h3 { margin-top: 0; }
+.step-row .tracks { margin-top: 0; }
+.media-slot { min-height: 220px; display: flex; align-items: center; justify-content: center; text-align: center; padding: 16px;
+  border: 1px dashed var(--line-2); border-radius: 6px; color: var(--muted); font-style: italic; background: rgba(255,255,255,0.02); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin-bottom: 8px; }
+.card { border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; font-size: 14px; margin: 0; min-width: 0; }
+.card.empty { border-style: dashed; color: var(--muted); font-style: italic; }
+.card audio { display: block; width: 100%; margin-top: 8px; }
+.card-tag { display: block; font: 12px var(--mono); color: var(--muted); }
+.audio-slot { height: 36px; margin-top: 10px; border-radius: 18px; border: 1px dashed var(--line-2); }
+.img-slot { aspect-ratio: 4 / 3; margin-bottom: 10px; border-radius: 4px; border: 1px dashed var(--line-2); background: rgba(255,255,255,0.02); }
+.card.shot img { display: block; width: 100%; height: auto; border-radius: 4px; margin-bottom: 8px; }
+.doc-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 32px; }
+.doc-grid figure.narrow img { max-width: 100%; }
+@media (max-width: 800px) {
+  .row, .cols, .step-row, .doc-grid { grid-template-columns: 1fr; }
+  .row > .box { margin-bottom: 0; }
+}
+span.placeholder { padding: 1px 6px; border-radius: 3px; }
+
+/* ---------------- analysis lab ---------------- */
+.knobs { display: grid; gap: 8px; margin: 12px 0; }
+.knobs label { display: grid; grid-template-columns: 4.5em 1fr 3.4em; align-items: center; gap: 10px; font: 13px var(--mono); color: var(--muted); }
+.knobs output { text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+.knobs input { width: 100%; }
+.lab-ctrl { align-items: center; }
+.lab-round { font: 600 13px var(--mono); color: var(--text); letter-spacing: 0.06em; }
+#lab-scrub, #cmp-slider { width: 100%; margin: 6px 0 12px; }
+.lab-chart { display: block; width: 100%; height: 120px; border: 1px solid var(--line-2); border-radius: 4px; }
+.mbar { display: grid; grid-template-columns: 6.5em 1fr 2.6em; gap: 8px; align-items: center; font: 12px var(--mono); margin-top: 3px; }
+.mbar span:last-child { text-align: right; color: var(--text); }
+.mtrack { height: 7px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+.mtrack div { height: 100%; border-radius: 4px; }
+.specs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.specs figure { margin: 0; min-width: 0; }
+.specs figcaption, .compare-head { font: 12px var(--mono); color: var(--muted); margin-top: 4px; }
+.compare-head { display: flex; justify-content: space-between; margin: 14px 0 4px; }
+canvas.spec { display: block; width: 100%; height: 70px; border: 1px solid var(--line-2); border-radius: 3px; }
+canvas.spec.big { height: 140px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.chips button { font-size: 12.5px; padding: 5px 10px; color: var(--c); }
+.chips button[aria-pressed="true"] { background: var(--c); color: #0b0f17; border-color: var(--c); }
+@media (max-width: 480px) { .specs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

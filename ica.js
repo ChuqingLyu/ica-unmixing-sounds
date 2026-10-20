@@ -12,6 +12,11 @@
 // first three of them instead of the examples. All recordings also show up in the visualizer's lists.
 var CLASSROOM_CLIPS = [];
 
+// Screenshots or photos of students' submitted work, shown as image cards in
+// "Student recordings & submissions". When empty, placeholder cards are shown. Example entry:
+//   { title: 'Sound map (Student A)', src: 'submissions/sound-map-a.png', caption: 'A short caption' }
+var STUDENT_SUBMISSIONS = [];
+
 // Example sounds: openly licensed recordings standing in until the classroom recordings are added.
 // Full credits are in audio/credits.json.
 var EXAMPLE_CLIPS = [
@@ -270,7 +275,7 @@ var EXAMPLE_CLIPS = [
     fastICA: fastICA, corr: corr, matchComponents: matchComponents, normalizePeak: normalizePeak,
     fitLength: fitLength, logcosh: logcosh, nonGaussianity: nonGaussianity,
     DEFAULT_MIX: DEFAULT_MIX, DEFAULT_MIX2: DEFAULT_MIX2,
-    EXAMPLE_CLIPS: EXAMPLE_CLIPS, CLASSROOM_CLIPS: CLASSROOM_CLIPS
+    EXAMPLE_CLIPS: EXAMPLE_CLIPS, CLASSROOM_CLIPS: CLASSROOM_CLIPS, STUDENT_SUBMISSIONS: STUDENT_SUBMISSIONS
   };
 
   if (typeof module !== 'undefined' && module.exports) { module.exports = ICA; return; }
@@ -560,7 +565,7 @@ var EXAMPLE_CLIPS = [
     { title: 'Mixed up',
       text: 'Now both mics hear a bit of both sounds. Left–right is mic 1, up–down is mic 2. The cross gets slanted and squashed. Move the sliders to change how loud each sound is at each mic.' },
     { title: 'Move to the middle',
-      text: 'First the computer slides the whole cloud so its center sits on the middle of the plot. (I added a small steady offset to each mic so you can see this step. Real sound files are usually already close to the middle.)' },
+      text: 'First the computer slides the whole cloud so its center sits on the middle of the plot.' },
     { title: 'Make it round',
       text: 'Next it stretches and squashes the cloud until it is spread out the same amount in every direction, so each microphone counts fairly. The cross is still there, but its two arms are now at a right angle.' },
     { title: 'Turn the dial',
@@ -834,7 +839,7 @@ var EXAMPLE_CLIPS = [
     V.clipList = clips;
     V.a = Math.max(0, clips.findIndex(function (c) { return c.id === 'kitchen'; }));
     V.b = Math.max(0, clips.findIndex(function (c) { return c.id === 'classroom'; }));
-    var opts = clips.map(function (c, i) { return '<option value="' + i + '">' + esc(c.label) + (c.kind === 'example' ? ' (example)' : '') + '</option>'; }).join('');
+    var opts = clips.map(function (c, i) { return '<option value="' + i + '">' + esc(c.label) + '</option>'; }).join('');
     $('viz-sa').innerHTML = opts; $('viz-sb').innerHTML = opts;
     $('viz-sa').value = V.a; $('viz-sb').value = V.b;
     function pick() {
@@ -903,40 +908,280 @@ var EXAMPLE_CLIPS = [
     for (var i = 0; i < 3; i++) drawWave($('mic' + i + '-wave'), mixtures[i], COLORS.mix);
     $('mix-warn').textContent = Math.abs(det(A)) < 1e-3
       ? 'With these numbers, the mics hear (almost) the same blend, so the sounds can’t be pulled apart. Try changing a number.' : '';
-    $('ica-out').innerHTML = '<p class="muted">Press “Separate” to let the computer pull the sounds apart.</p>';
+    $('ica-out').innerHTML = '<p class="muted">Press “Separate” first.</p>';
     $('ica-status').textContent = '';
     lastOutputs = null;
+    if ($('lab-panel')) { labReset(); tryReset(); }
   }
 
   var separations = 0;
-  function separate() {
-    stopPlaying();
-    var seed = separations++ === 0 ? 1 : (Date.now() & 0xffff);
-    var res = fastICA(mixtures, { maxIter: 200, tol: 1e-6, seed: seed });
-    var match = matchComponents(res.Y, sources);
-    var out = $('ica-out');
-    out.innerHTML = '';
-    lastOutputs = [];
-    res.Y.forEach(function (y, i) {
-      var mt = match[i], color = colorOf(demoClips[mt.source]);   // each output takes the color of the sound it matches
-      var note = 'Sounds like: <b>' + esc(demoClips[mt.source].label) + '</b>, match ' + mt.abs.toFixed(2) +
-        (mt.corr < 0 ? ' (came out upside down, which sounds the same)' : '');
-      out.appendChild(trackRow('Track ' + (i + 1), 'ic' + i, note, color));
-      var yn = normalizePeak(y, 0.9);
-      drawWave($('ic' + i + '-wave'), yn, color);
-      lastOutputs.push({ y: yn, color: color });
-      playButton($('ic' + i + '-play'), function () { return yn; });
+  // ===================== Analysis lab =====================
+  var SUB = null;                       // fixed subsample of moments for quick meters
+  function subIdx() { if (!SUB) { SUB = []; for (var t = 0; t < N; t += 18) SUB.push(t); } return SUB; }
+  function scoreOf(Y) {                 // sum of non-Gaussianity over outputs, on the subsample
+    var idx = subIdx(), s = 0;
+    Y.forEach(function (y) { var v = new Float64Array(idx.length); for (var k = 0; k < idx.length; k++) v[k] = y[idx[k]]; s += nonGaussianity(v); });
+    return s;
+  }
+  function lerpW(A0, B0, u) { return A0.map(function (r, i) { return r.map(function (v, j) { return v + (B0[i][j] - v) * u; }); }); }
+
+  // ---- FFT + spectrogram ----
+  var FFTN = 512, HOP = 512, FBINS = 128;   // 128 bins of 31.25 Hz = 0-4 kHz
+  var HANN = (function () { var w = new Float64Array(FFTN); for (var i = 0; i < FFTN; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (FFTN - 1)); return w; })();
+  function fft(re, im) {
+    var n = re.length, i, j, k, len;
+    for (i = 1, j = 0; i < n; i++) { var bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit; if (i < j) { var t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t; } }
+    for (len = 2; len <= n; len <<= 1) {
+      var ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+      for (i = 0; i < n; i += len) {
+        var cr = 1, ci = 0;
+        for (k = 0; k < len / 2; k++) {
+          var ar = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci, ai = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr;
+          re[i + k + len / 2] = re[i + k] - ar; im[i + k + len / 2] = im[i + k] - ai; re[i + k] += ar; im[i + k] += ai;
+          var nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr;
+        }
+      }
+    }
+  }
+  function spectrogram(x) {
+    var frames = Math.floor((x.length - FFTN) / HOP) + 1, out = new Float32Array(frames * FBINS), mx = -Infinity;
+    var re = new Float64Array(FFTN), im = new Float64Array(FFTN);
+    for (var f = 0; f < frames; f++) {
+      for (var i = 0; i < FFTN; i++) { re[i] = x[f * HOP + i] * HANN[i]; im[i] = 0; }
+      fft(re, im);
+      for (var b = 0; b < FBINS; b++) { var db = 10 * Math.log10(re[b] * re[b] + im[b] * im[b] + 1e-12); out[f * FBINS + b] = db; if (db > mx) mx = db; }
+    }
+    return { d: out, frames: frames, max: mx };
+  }
+  function specImage(sp, color) {
+    var cv = document.createElement('canvas'); cv.width = sp.frames; cv.height = FBINS;
+    var c = cv.getContext('2d'), img = c.createImageData(sp.frames, FBINS), rgb = hexRgb(color);
+    for (var f = 0; f < sp.frames; f++) for (var b = 0; b < FBINS; b++) {
+      var v = Math.max(0, Math.min(1, (sp.d[f * FBINS + b] - sp.max + 60) / 60)); v = v * v;
+      var o = ((FBINS - 1 - b) * sp.frames + f) * 4;
+      img.data[o] = 8 + rgb[0] * v; img.data[o + 1] = 12 + rgb[1] * v; img.data[o + 2] = 19 + rgb[2] * v; img.data[o + 3] = 255;
+    }
+    c.putImageData(img, 0, 0); return cv;
+  }
+  function drawImg(canvas, img, h) { var g = setupCanvas(canvas, h); g.c.imageSmoothingEnabled = true; g.c.drawImage(img, 0, 0, g.w, g.h); return g; }
+
+  // ---- 3 · You try first ----
+  var T = { Z: null, best: 0, ref: 1, outs: null, raf: null };
+  function rot3(a) {   // turn by a[0] in plane 1-2, a[1] in plane 1-3, a[2] in plane 2-3
+    function R(p, q, th) { var M = [[1, 0, 0], [0, 1, 0], [0, 0, 1]], c = Math.cos(th), s = Math.sin(th); M[p][p] = c; M[q][q] = c; M[p][q] = s; M[q][p] = -s; return M; }
+    var d = Math.PI / 180;
+    return matMul(R(1, 2, a[2] * d), matMul(R(0, 2, a[1] * d), R(0, 1, a[0] * d)));
+  }
+  function tryReset() {
+    T.Z = whiten(center(mixtures).Xc).Z; T.best = 0;
+    var idx = subIdx(), Zs = T.Z.map(function (z) { var v = new Float64Array(idx.length); for (var k = 0; k < idx.length; k++) v[k] = z[idx[k]]; return v; });
+    var r = fastICA(Zs, { seed: 1 });     // meter scale only: the best score the computer finds on the same moments
+    T.ref = scoreOf(r.Y.map(function (y) { var f = new Float64Array(N); for (var k = 0; k < idx.length; k++) f[idx[k]] = y[k]; return f; })) || 1;
+    // (scoreOf reads only the subsample, so the zeros in between don't matter)
+    for (var i = 0; i < 3; i++) { $('try-a' + i).value = 0; }
+    tryUpdate();
+  }
+  function tryUpdate() {
+    if (!T.Z) return;
+    var a = [0, 1, 2].map(function (i) { var v = +$('try-a' + i).value; $('try-a' + i + '-out').textContent = v + '°'; return v; });
+    T.outs = applyMatrix(rot3(a), T.Z);
+    var sc = scoreOf(T.outs);
+    if (sc > T.best) T.best = sc;
+    $('try-meter-out').textContent = sc.toFixed(4);
+    $('try-meter-bar').style.width = Math.min(100, 100 * sc / T.ref).toFixed(1) + '%';
+    $('try-best').textContent = 'Your best so far: ' + T.best.toFixed(4) + (L.res ? ' · Computer: ' + L.final.toFixed(4) : '');
+    for (var i = 0; i < 3; i++) drawWave($('try' + i + '-wave'), T.outs[i], COLORS.mix);
+    if (L.res) $('lab-vs').textContent = 'Your best score: ' + T.best.toFixed(4) + ' · Computer’s final score: ' + L.final.toFixed(4);
+  }
+  function tryInit() {
+    var box = $('try-out'); box.innerHTML = '';
+    for (var i = 0; i < 3; i++) (function (i) {
+      box.appendChild(trackRow('My output ' + (i + 1), 'try' + i, null, COLORS.mix));
+      playButton($('try' + i + '-play'), function () { return T.outs && T.outs[i]; });
+    })(i);
+    [0, 1, 2].forEach(function (i) {
+      $('try-a' + i).addEventListener('input', function () { if (T.raf) return; T.raf = requestAnimationFrame(function () { T.raf = null; tryUpdate(); }); });
     });
+  }
+
+  // ---- 4 · round-by-round playback ----
+  var L = { res: null, Ws: [], Y: [], scores: [], match: [], R: [], pos: 0, playing: false, raf: null, cmp: 0, specs: [], micSpec: null };
+  function labOutputs(pos) {
+    var k = Math.floor(pos), u = pos - k;
+    var W = u > 0 && k + 1 < L.Ws.length ? lerpW(L.Ws[k], L.Ws[k + 1], u) : L.Ws[Math.min(k, L.Ws.length - 1)];
+    return applyMatrix(W, L.res.Z);
+  }
+  function labColor(i, pos) {   // fades from mix-gray to the matched sound's color as the match grows
+    var k = Math.round(pos), m = L.match[k][i];
+    return blend(COLORS.mix, colorOf(demoClips[m.source]), Math.max(0, Math.min(1, (m.abs - 0.5) / 0.5)));
+  }
+  function labDrawChart(pos) {
+    var g = setupCanvas($('lab-chart'), 120), c = g.c, w = g.w, h = g.h, n = L.scores.length;
+    c.fillStyle = PLOT_BG; c.fillRect(0, 0, w, h); graticule(c, 0, 0, w, h, Math.max(2, n - 1), 4);
+    var mx = Math.max.apply(null, L.scores) * 1.1 || 1, px = function (r) { return 8 + (w - 16) * r / Math.max(1, n - 1); }, py = function (v) { return h - 8 - (h - 16) * v / mx; };
+    c.save(); c.strokeStyle = COLORS.hall; c.lineWidth = 2; c.shadowColor = COLORS.hall; c.shadowBlur = 8; c.beginPath();
+    var k = Math.floor(pos), u = pos - k;
+    for (var r = 0; r <= k; r++) { if (r) c.lineTo(px(r), py(L.scores[r])); else c.moveTo(px(0), py(L.scores[0])); }
+    if (u > 0 && k + 1 < n) c.lineTo(px(k + u), py(L.scores[k] + (L.scores[k + 1] - L.scores[k]) * u));
+    c.stroke(); c.restore();
+    c.fillStyle = '#fff';
+    for (r = 0; r <= k; r++) { c.beginPath(); c.arc(px(r), py(L.scores[r]), 2.5, 0, 7); c.fill(); }
+  }
+  function labBars(i, pos) {
+    var k = Math.floor(pos), u = pos - k, k2 = Math.min(k + 1, L.R.length - 1), html = '';
+    for (var j = 0; j < 3; j++) {
+      var v = Math.abs(L.R[k][i][j]) + (Math.abs(L.R[k2][i][j]) - Math.abs(L.R[k][i][j])) * u;
+      html += '<div class="mbar"><span>' + esc(demoClips[j].label) + '</span><div class="mtrack"><div style="width:' + (100 * v).toFixed(1) + '%;background:' + colorOf(demoClips[j]) + '"></div></div><span>' + (u ? '' : Math.abs(L.R[k][i][j]).toFixed(2)) + '</span></div>';
+    }
+    $('lab' + i + '-note').innerHTML = html;
+  }
+  function labSpecs() {
+    var k = Math.round(L.pos), Y = L.Y[k] || (L.Y[k] = labOutputs(k)), box = $('lab-specs');
+    if (!L.micSpec) L.micSpec = specImage(spectrogram(mixtures[0]), COLORS.mix);
+    L.specs = Y.map(function (y, i) { return specImage(spectrogram(y), labColor(i, k)); });
+    if (!box.children.length) {
+      box.innerHTML = ['Mic 1 (mixed)', 'Output 1', 'Output 2', 'Output 3'].map(function (t, i) { return '<figure><canvas class="spec" id="spec' + i + '"></canvas><figcaption>' + t + '</figcaption></figure>'; }).join('');
+    }
+    drawImg($('spec0'), L.micSpec, 70);
+    for (var i = 0; i < 3; i++) drawImg($('spec' + (i + 1)), L.specs[i], 70);
+    labCompare();
+  }
+  function labCompare() {
+    if (!L.specs.length) return;
+    var cv = $('cmp-canvas'), g = drawImg(cv, L.micSpec, 140), f = +$('cmp-slider').value / 100, x = g.w * f, img = L.specs[L.cmp];
+    g.c.save(); g.c.beginPath(); g.c.rect(x, 0, g.w - x, g.h); g.c.clip(); g.c.drawImage(img, 0, 0, g.w, g.h); g.c.restore();
+    g.c.fillStyle = '#fff'; g.c.fillRect(x - 1, 0, 2, g.h);
+    $('cmp-label').textContent = 'Output ' + (L.cmp + 1) + ' (round ' + Math.round(L.pos) + ')';
+  }
+  function labRender(full) {
+    var pos = L.pos, k = Math.round(pos), exact = Math.abs(pos - k) < 1e-9;
+    var Y = exact ? (L.Y[k] || (L.Y[k] = labOutputs(k))) : labOutputs(pos);
+    for (var i = 0; i < 3; i++) {
+      var col = labColor(i, pos);
+      $('lab' + i).style.setProperty('--c', col);
+      drawWave($('lab' + i + '-wave'), Y[i], col);
+      labBars(i, pos);
+    }
+    labDrawChart(pos);
+    $('lab-scrub').value = k;
+    $('lab-round-out').textContent = 'Round ' + k + ' of ' + (L.Ws.length - 1) + (k === 0 ? ' (start)' : '');
+    $('lab-score-out').textContent = exact ? L.scores[k].toFixed(4) : '';
+    if (full) labSpecs();
+  }
+  function labGo(k) {
+    k = Math.max(0, Math.min(L.Ws.length - 1, k));
+    cancelAnimationFrame(L.raf);
+    var from = L.pos;
+    if (reduceMotion || from === k) { L.pos = k; labRender(true); return; }
+    var t0 = null, dur = 650;
+    function step(ts) {
+      if (t0 === null) t0 = ts;
+      var u = Math.min(1, (ts - t0) / dur);
+      L.pos = from + (k - from) * ease(u);
+      if (u < 1) { labRender(false); L.raf = requestAnimationFrame(step); }
+      else { L.pos = k; labRender(true); if (L.playing) { if (k < L.Ws.length - 1) setTimeout(function () { if (L.playing) labGo(k + 1); }, 250); else labStop(); } }
+    }
+    L.raf = requestAnimationFrame(step);
+  }
+  function labStop() { L.playing = false; $('lab-play').textContent = 'Play rounds'; }
+  function labInit() {
+    $('lab-prev').addEventListener('click', function () { labStop(); labGo(Math.round(L.pos) - 1); });
+    $('lab-next').addEventListener('click', function () { labStop(); labGo(Math.round(L.pos) + 1); });
+    $('lab-scrub').addEventListener('input', function () { labStop(); cancelAnimationFrame(L.raf); L.pos = +this.value; labRender(false); });
+    $('lab-scrub').addEventListener('change', function () { labRender(true); });
+    $('lab-play').addEventListener('click', function () {
+      if (L.playing) { labStop(); return; }
+      L.playing = true; this.textContent = 'Pause';
+      if (reduceMotion) { labStop(); labGo(L.Ws.length - 1); return; }
+      labGo(Math.round(L.pos) >= L.Ws.length - 1 ? 0 : Math.round(L.pos) + 1);
+    });
+    $('cmp-slider').addEventListener('input', labCompare);
+  }
+  function labReset() {
+    labStop(); cancelAnimationFrame(L.raf);
+    L.res = null; L.micSpec = null; L.specs = []; $('lab-specs').innerHTML = '';
+    $('lab-panel').hidden = true; $('lab-spec-wrap').hidden = true; $('lab-out').innerHTML = ''; $('lab-vs').textContent = '';
+    $('game-check').disabled = true; $('game-score').textContent = '';
+  }
+
+  // ---- 5 · Which is which? ----
+  var G = { guess: [null, null, null], revealed: false };
+  function gameReveal() {
+    G.revealed = true; var right = 0, any = false;
+    L.final_match.forEach(function (mt, i) {
+      var color = colorOf(demoClips[mt.source]), el = $('ic' + i + '-wave').parentNode;
+      el.style.setProperty('--c', color);
+      drawWave($('ic' + i + '-wave'), lastOutputs[i].y, color); lastOutputs[i].color = color;
+      var g = G.guess[i], ok = g === mt.source; if (g != null) { any = true; if (ok) right++; }
+      $('ic' + i + '-note').innerHTML = (g == null ? '' : (ok ? '✓ ' : '✗ You said ' + esc(demoClips[g].label) + '. ')) +
+        'Sounds like: <b>' + esc(demoClips[mt.source].label) + '</b>, match ' + mt.abs.toFixed(2) + (mt.corr < 0 ? ' (came out upside down, which sounds the same)' : '');
+    });
+    $('game-check').disabled = true;
+    $('game-score').textContent = any ? 'You got ' + right + ' of 3.' : '';
+  }
+
+  function separate() {
+    stopPlaying(); labReset();
+    var seed = separations++ === 0 ? 1 : (Date.now() & 0xffff), Ws = [];
+    var res = fastICA(mixtures, { maxIter: 200, tol: 1e-6, seed: seed, onRound: function (it, W) { Ws.push(W.map(function (r) { return r.slice(); })); } });
+    var match = matchComponents(res.Y, sources);
+    L.res = res; L.Ws = Ws; L.Y = []; L.scores = []; L.match = []; L.R = []; L.pos = 0;
+    Ws.forEach(function (W, k) {
+      var Y = applyMatrix(W, res.Z);
+      L.scores.push(scoreOf(Y)); L.match.push(matchComponents(Y, sources));
+      L.R.push(Y.map(function (y) { return sources.map(function (s) { return corr(y, s); }); }));
+    });
+    L.final = L.scores[L.scores.length - 1]; L.final_match = match;
+    var lo = $('lab-out'); lo.innerHTML = '';
+    for (var i = 0; i < 3; i++) (function (i) {
+      var row = trackRow('Output ' + (i + 1), 'lab' + i, ' ', COLORS.mix); row.id = 'lab' + i; lo.appendChild(row);
+      playButton($('lab' + i + '-play'), function () { var k = Math.round(L.pos); return L.Y[k] || (L.Y[k] = labOutputs(k)); });
+    })(i);
+    $('cmp-pick').innerHTML = '';
+    [0, 1, 2].forEach(function (i) {
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = 'Output ' + (i + 1);
+      b.addEventListener('click', function () { L.cmp = i; labCompare(); }); $('cmp-pick').appendChild(b);
+    });
+    $('lab-panel').hidden = false; $('lab-spec-wrap').hidden = false;
+    $('lab-scrub').max = Ws.length - 1;
+    var lr = /[?&]labround=(\d+)/.exec(params);
+    L.pos = lr ? Math.min(+lr[1], Ws.length - 1) : 0;
+    labRender(true);
+    if (!lr && !/[?&]autorun=1\b/.test(params)) { L.playing = true; $('lab-play').textContent = 'Pause'; if (reduceMotion) { labStop(); labGo(Ws.length - 1); } else setTimeout(function () { if (L.playing) labGo(1); }, 400); }
+    $('lab-vs').textContent = (T.best ? 'Your best score: ' + T.best.toFixed(4) + ' · ' : '') + 'Computer’s final score: ' + L.final.toFixed(4);
+    tryUpdate();
+
+    // final outputs for the matching game (gray until checked)
+    var out = $('ica-out'); out.innerHTML = ''; lastOutputs = []; G.guess = [null, null, null]; G.revealed = false;
+    res.Y.forEach(function (y, i) {
+      out.appendChild(trackRow('Track ' + (i + 1), 'ic' + i, ' ', COLORS.mix));
+      var yn = normalizePeak(y, 0.9);
+      drawWave($('ic' + i + '-wave'), yn, COLORS.mix);
+      lastOutputs.push({ y: yn, color: COLORS.mix });
+      playButton($('ic' + i + '-play'), function () { return yn; });
+      var chips = document.createElement('div'); chips.className = 'chips'; chips.setAttribute('role', 'group'); chips.setAttribute('aria-label', 'Track ' + (i + 1) + ' is');
+      demoClips.forEach(function (c, j) {
+        var b = document.createElement('button'); b.type = 'button'; b.textContent = c.label; b.style.setProperty('--c', colorOf(c)); b.setAttribute('aria-pressed', 'false');
+        b.addEventListener('click', function () {
+          if (G.revealed) return; G.guess[i] = j;
+          [].forEach.call(chips.children, function (x, q) { x.setAttribute('aria-pressed', q === j ? 'true' : 'false'); });
+        });
+        chips.appendChild(b);
+      });
+      $('ic' + i + '-note').innerHTML = ''; $('ic' + i + '-note').parentNode.insertBefore(chips, $('ic' + i + '-note'));
+    });
+    $('game-check').disabled = false;
     $('ica-status').textContent = (res.converged ? 'Done! ' : 'Stopped. ') + 'It took ' + res.iterations +
       ' round' + (res.iterations === 1 ? '' : 's') + ' of adjusting.';
-    root.__icaResult = { iterations: res.iterations, converged: res.converged, match: match };
+    root.__icaResult = { iterations: res.iterations, converged: res.converged, match: match, scores: L.scores };
+    if (/[?&]autorun=1\b/.test(params)) gameReveal();
   }
 
   function demoInit() {
     var srcBox = $('sources'), micBox = $('mics'), i;
     srcBox.innerHTML = ''; micBox.innerHTML = '';
     for (i = 0; i < 3; i++) {
-      srcBox.appendChild(trackRow(demoClips[i].label + (demoClips[i].kind === 'example' ? ' (example sound)' : ''), 'src' + i, null, colorOf(demoClips[i])));
+      srcBox.appendChild(trackRow(demoClips[i].label, 'src' + i, null, colorOf(demoClips[i])));
       micBox.appendChild(trackRow(MICS[i], 'mic' + i, null, COLORS.mix));
     }
     for (i = 0; i < 3; i++) (function (i) {
@@ -944,6 +1189,8 @@ var EXAMPLE_CLIPS = [
       playButton($('src' + i + '-play'), function () { return sources[i]; });
       playButton($('mic' + i + '-play'), function () { return mixtures[i]; });
     })(i);
+    tryInit(); labInit();
+    $('game-check').addEventListener('click', gameReveal);
     buildMatrix();
     updateMixtures();
     var all = new Float64Array(N);
@@ -962,17 +1209,28 @@ var EXAMPLE_CLIPS = [
     $('separate').disabled = false; $('randomize').disabled = false;
   }
 
-  // Slots for the kids' recordings (filled from CLASSROOM_CLIPS, empty placeholders otherwise).
+  // Student recordings & submissions: real cards from CLASSROOM_CLIPS / STUDENT_SUBMISSIONS, placeholders otherwise.
   function kidsSlots() {
     var box = $('kids-slots'), html = '';
-    ['kitchen', 'hall', 'classroom'].forEach(function (place) {
-      var mine = CLASSROOM_CLIPS.filter(function (c) { return c.place === place; });
-      if (!mine.length) html += '<div class="slot empty" style="border-color:' + rgba(COLORS[place], 0.35) + '">[Kids’ recording from ' + PLACE_NAMES[place] + ' — to be added]</div>';
-      mine.forEach(function (c) {
-        html += '<div class="slot" style="border-color:' + rgba(COLORS[place], 0.5) + '"><strong>' + esc(c.label) + '</strong><audio controls preload="none" src="' + esc(c.src) + '"></audio></div>';
-      });
+    CLASSROOM_CLIPS.forEach(function (c) {
+      var col = COLORS[c.place] || COLORS.mix;
+      html += '<div class="card" style="border-color:' + rgba(col, 0.5) + '"><strong>' + esc(c.label) + '</strong>' +
+        (c.place && PLACE_NAMES[c.place] ? '<span class="card-tag">' + esc(PLACE_NAMES[c.place]) + '</span>' : '') +
+        '<audio controls preload="none" src="' + esc(c.src) + '"></audio></div>';
+    });
+    if (!CLASSROOM_CLIPS.length) ['kitchen', 'hall', 'classroom'].forEach(function (place) {
+      html += '<div class="card empty" style="border-color:' + rgba(COLORS[place], 0.35) + '"><strong>[Student recording — to be added]</strong><div class="audio-slot" aria-hidden="true"></div></div>';
     });
     box.innerHTML = html;
+    var sub = $('submissions'), sh = '';
+    if (!sub) return;
+    STUDENT_SUBMISSIONS.forEach(function (c) {
+      sh += '<figure class="card shot"><img src="' + esc(c.src) + '" alt="' + esc(c.title || '') + '" loading="lazy">' +
+        '<figcaption><strong>' + esc(c.title || '') + '</strong>' + (c.caption ? ' ' + esc(c.caption) : '') + '</figcaption></figure>';
+    });
+    if (!STUDENT_SUBMISSIONS.length) for (var k = 0; k < 2; k++)
+      sh += '<div class="card empty shot"><div class="img-slot" aria-hidden="true"></div><strong>[Submission example — to be added]</strong></div>';
+    sub.innerHTML = sh;
   }
 
   // ===================== Hero: a mixed signal that unmixes itself =====================
@@ -1121,7 +1379,7 @@ var EXAMPLE_CLIPS = [
         document.body.setAttribute('data-sounds', 'loaded');
         vizInit();
         demoInit();
-        if (/[?&]autorun=1\b/.test(params)) separate();
+        if (/[?&](autorun=1\b|labround=)/.test(params)) separate();
       })
       .catch(function (e) {
         status.textContent = 'Sorry, the sounds could not be loaded (' + e.message + '). If you opened this file directly, try a local web server.';
