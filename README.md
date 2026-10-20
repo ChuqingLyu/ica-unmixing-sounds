@@ -26,7 +26,7 @@ URL options: `?autorun=1` presses Separate once the sounds load (and reveals the
 
 ## Sounds
 
-Right now the demo uses openly licensed recordings; students' own recordings will replace them. They were not recorded by the students. Each is a 9-second excerpt, mono, 16 kHz, loudness-normalized, 40 kbps MP3. Full details are in `audio/credits.json`.
+`audio/students/` holds six real student recordings from the summer project (excerpts of up to 30 s, 128 kbps MP3, with spectrogram strips). The demo uses the three openly licensed example sounds below by default (not recorded by students); a toggle switches the full demo to three student recordings (first 9 s of each, mixed digitally). Photos in `images/activity/` have all faces blurred. Each is a 9-second excerpt, mono, 16 kHz, loudness-normalized, 40 kbps MP3. Full details are in `audio/credits.json`.
 
 | File | Stands in for | Source | Author | License |
 |---|---|---|---|---|
@@ -36,7 +36,11 @@ Right now the demo uses openly licensed recordings; students' own recordings wil
 
 To rebuild the clips, download the three originals into a folder and run `tools/make_audio.sh <folder>` (needs ffmpeg). It also writes `test/sources-16k.s16`, the decoded clips used by the test and the figure script.
 
-## Adding the kids' recordings
+## Student recordings (`CLASSROOM_CLIPS`)
+
+Each entry: `label`, `src`, optional `strip` (spectrogram image), `seconds`, `color`, `description`, and `demo: true` on exactly three entries for the demo toggle.
+
+## Older format for adding recordings
 
 Open `ica.js` and fill in `CLASSROOM_CLIPS` at the top:
 

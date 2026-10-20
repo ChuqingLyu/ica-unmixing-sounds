@@ -2,20 +2,30 @@
    The math part (top) also runs in Node for testing: node test/ica-test.js */
 
 // ===================== Settings you can change =====================
-// Kids' own recordings. When this list is empty, the page uses the example sounds below
-// and shows empty slots for the kids' recordings. Add one entry per recording, e.g.
+// Students' own recordings (Bocuide School summer project), shown as cards with a player and a
+// spectrogram strip. Entries with demo: true (exactly 3) can be used as the full demo's sources via
+// the toggle; the demo uses the first 9 seconds of each. Older example format:
 //   { label: 'Kitchen (Class 4B)', place: 'kitchen', src: 'audio/kids/kitchen-4b.mp3' },
 //   { label: 'Hall (Class 4B)',    place: 'hall',    src: 'audio/kids/hall-4b.mp3' },
 //   { label: 'Classroom (Class 4B)', place: 'classroom', src: 'audio/kids/classroom-4b.mp3' }
 // place is one of: 'kitchen', 'hall', 'classroom'. Any audio format the browser can play works;
 // each recording is cut or padded to 9 seconds. With 3 or more recordings, the full demo uses the
 // first three of them instead of the examples. All recordings also show up in the visualizer's lists.
-var CLASSROOM_CLIPS = [];
+var CLASSROOM_CLIPS = [
+  { label: 'Student recording 1', short: 'Rec 1', src: 'audio/students/student-1.mp3', strip: 'audio/students/student-1-spec.png', seconds: 8,  color: '#a78bfa' },
+  { label: 'Student recording 2', short: 'Rec 2', src: 'audio/students/student-2.mp3', strip: 'audio/students/student-2-spec.png', seconds: 30, color: '#7ee081', demo: true },
+  { label: 'Student recording 3', short: 'Rec 3', src: 'audio/students/student-3.mp3', strip: 'audio/students/student-3-spec.png', seconds: 30, color: '#6cb6ff', demo: true },
+  { label: 'Student recording 4', short: 'Rec 4', src: 'audio/students/student-4.mp3', strip: 'audio/students/student-4-spec.png', seconds: 30, color: '#f0e36b' },
+  { label: 'Student recording 5', short: 'Rec 5', src: 'audio/students/student-5.mp3', strip: 'audio/students/student-5-spec.png', seconds: 22, color: '#ff8a65' },
+  { label: 'Student recording 6', short: 'Rec 6', src: 'audio/students/student-6.mp3', strip: 'audio/students/student-6-spec.png', seconds: 30, color: '#f48fb1', demo: true }
+];
 
 // Screenshots or photos of students' submitted work, shown as image cards in
 // "Student recordings & submissions". When empty, placeholder cards are shown. Example entry:
 //   { title: 'Sound map (Student A)', src: 'submissions/sound-map-a.png', caption: 'A short caption' }
-var STUDENT_SUBMISSIONS = [];
+var STUDENT_SUBMISSIONS = [
+  { title: 'Student editing their recordings in a DAW', src: 'images/activity/daw-projector.jpg', caption: 'Students reviewing and editing their recordings.' }
+];
 
 // Example sounds: openly licensed recordings standing in until the classroom recordings are added.
 // Full credits are in audio/credits.json.
@@ -298,7 +308,7 @@ var EXAMPLE_CLIPS = [
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
   // ---------- colors ----------
-  function colorOf(clip) { return (clip && COLORS[clip.place]) || COLORS.mix; }
+  function colorOf(clip) { return (clip && (clip.color || COLORS[clip.place])) || COLORS.mix; }
   function hexRgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   function blend(h1, h2, u) {
     var a = hexRgb(h1), b = hexRgb(h2);
@@ -1031,7 +1041,7 @@ var EXAMPLE_CLIPS = [
     var k = Math.floor(pos), u = pos - k, k2 = Math.min(k + 1, L.R.length - 1), html = '';
     for (var j = 0; j < 3; j++) {
       var v = Math.abs(L.R[k][i][j]) + (Math.abs(L.R[k2][i][j]) - Math.abs(L.R[k][i][j])) * u;
-      html += '<div class="mbar"><span>' + esc(demoClips[j].label) + '</span><div class="mtrack"><div style="width:' + (100 * v).toFixed(1) + '%;background:' + colorOf(demoClips[j]) + '"></div></div><span>' + (u ? '' : Math.abs(L.R[k][i][j]).toFixed(2)) + '</span></div>';
+      html += '<div class="mbar"><span>' + esc(demoClips[j].short || demoClips[j].label) + '</span><div class="mtrack"><div style="width:' + (100 * v).toFixed(1) + '%;background:' + colorOf(demoClips[j]) + '"></div></div><span>' + (u ? '' : Math.abs(L.R[k][i][j]).toFixed(2)) + '</span></div>';
     }
     $('lab' + i + '-note').innerHTML = html;
   }
@@ -1177,25 +1187,45 @@ var EXAMPLE_CLIPS = [
     if (/[?&]autorun=1\b/.test(params)) gameReveal();
   }
 
-  function demoInit() {
-    var srcBox = $('sources'), micBox = $('mics'), i;
-    srcBox.innerHTML = ''; micBox.innerHTML = '';
-    for (i = 0; i < 3; i++) {
+  function buildSources() {
+    var srcBox = $('sources'); srcBox.innerHTML = '';
+    for (var i = 0; i < 3; i++) (function (i) {
       srcBox.appendChild(trackRow(demoClips[i].label, 'src' + i, null, colorOf(demoClips[i])));
-      micBox.appendChild(trackRow(MICS[i], 'mic' + i, null, COLORS.mix));
-    }
-    for (i = 0; i < 3; i++) (function (i) {
       drawWave($('src' + i + '-wave'), sources[i], colorOf(demoClips[i]));
       playButton($('src' + i + '-play'), function () { return sources[i]; });
+    })(i);
+  }
+  function demoInit() {
+    var micBox = $('mics'), i;
+    micBox.innerHTML = '';
+    for (i = 0; i < 3; i++) micBox.appendChild(trackRow(MICS[i], 'mic' + i, null, COLORS.mix));
+    buildSources();
+    for (i = 0; i < 3; i++) (function (i) {
       playButton($('mic' + i + '-play'), function () { return mixtures[i]; });
     })(i);
+    var sw = $('demo-src');
+    if (sw) {
+      var studs = clips.filter(function (c) { return c.kind === 'kids' && c.demo; });
+      if (studs.length !== 3) sw.hidden = true;
+      [].forEach.call(sw.querySelectorAll('button'), function (b) {
+        b.addEventListener('click', function () {
+          var list = b.dataset.src === 'students' ? studs : clips.filter(function (c) { return c.kind === 'example'; });
+          if (list.length !== 3 || list[0] === demoClips[0]) return;
+          [].forEach.call(sw.querySelectorAll('button'), function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+          stopPlaying(); demoClips = list; sources = list.map(function (c) { return c.x; });
+          buildSources(); updateMixtures();
+        });
+      });
+    }
     tryInit(); labInit();
     $('game-check').addEventListener('click', gameReveal);
     buildMatrix();
     updateMixtures();
-    var all = new Float64Array(N);
-    for (i = 0; i < N; i++) all[i] = sources[0][i] + sources[1][i] + sources[2][i];
-    playButton($('play-all'), function () { return all; });
+    playButton($('play-all'), function () {
+      var all = new Float64Array(N);
+      for (var t = 0; t < N; t++) all[t] = sources[0][t] + sources[1][t] + sources[2][t];
+      return all;
+    });
     $('randomize').addEventListener('click', function () {
       var r = Math.random;
       do { for (var i = 0; i < 3; i++) for (var j = 0; j < 3; j++) A[i][j] = Math.round((0.1 + 0.9 * r()) * 20) / 20; }
@@ -1213,9 +1243,10 @@ var EXAMPLE_CLIPS = [
   function kidsSlots() {
     var box = $('kids-slots'), html = '';
     CLASSROOM_CLIPS.forEach(function (c) {
-      var col = COLORS[c.place] || COLORS.mix;
-      html += '<div class="card" style="border-color:' + rgba(col, 0.5) + '"><strong>' + esc(c.label) + '</strong>' +
-        (c.place && PLACE_NAMES[c.place] ? '<span class="card-tag">' + esc(PLACE_NAMES[c.place]) + '</span>' : '') +
+      var col = colorOf(c);
+      html += '<div class="card" style="border-color:' + rgba(col, 0.5) + '"><strong style="color:' + col + '">' + esc(c.label) + '</strong>' +
+        '<span class="card-tag">' + (c.seconds ? c.seconds + ' s' + (c.seconds >= 30 ? ' excerpt' : '') + ' · ' : '') + (c.description ? esc(c.description) : '[Description — to be added]') + '</span>' +
+        (c.strip ? '<img class="strip-img" src="' + esc(c.strip) + '" alt="Spectrogram of ' + esc(c.label) + '" loading="lazy">' : '') +
         '<audio controls preload="none" src="' + esc(c.src) + '"></audio></div>';
     });
     if (!CLASSROOM_CLIPS.length) ['kitchen', 'hall', 'classroom'].forEach(function (place) {
@@ -1372,7 +1403,7 @@ var EXAMPLE_CLIPS = [
         clips = loaded.filter(Boolean);
         var kids = clips.filter(function (c) { return c.kind === 'kids'; });
         var ex = clips.filter(function (c) { return c.kind === 'example'; });
-        demoClips = kids.length >= 3 ? kids.slice(0, 3) : ex;
+        demoClips = ex;
         if (demoClips.length < 3 || clips.length < 2) throw new Error('Some sounds did not load.');
         sources = demoClips.map(function (c) { return c.x; });
         status.textContent = 'Sounds loaded: ' + clips.length + ' clips, ' + DUR + ' seconds each.';

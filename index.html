@@ -48,9 +48,14 @@
       <div class="cols">
         <div>
           <p>I ran this as a summer-vacation project assignment. Over two weeks, about 6 Grade 7–8 students from Bocuide School, Guangzhou recorded sounds from their neighborhoods, homes, and communities with boom-pole microphones.</p>
-          <p>Then we mixed their sounds and unmixed them with ICA, using the tools on this page.</p>
+          <p>On this page you can mix and unmix sounds with ICA, including some of their recordings.</p>
         </div>
-        <div class="media-slot" role="img" aria-label="Placeholder for a photo or video of the activity"><span>[Photo or video of the activity — to be added]</span></div>
+        <div class="photos">
+          <figure class="wide"><img src="images/activity/activity-group.jpg" alt="Students working on laptops around a table during the activity; faces blurred" loading="lazy" width="1280" height="853"></figure>
+          <figure><img src="images/activity/activity-listening.jpg" alt="A student with headphones working on a laptop; faces blurred" loading="lazy" width="1280" height="1919"></figure>
+          <figure><img src="images/activity/activity-headphones.jpg" alt="A student wearing headphones looking at a laptop; face blurred" loading="lazy" width="1280" height="1920"></figure>
+          <figcaption class="muted small">Students during the activity. Faces are blurred for privacy.</figcaption>
+        </div>
       </div>
     </section>
 
@@ -147,7 +152,11 @@
       <div class="step-row">
         <div>
           <h3>1 · The sounds</h3>
-          <p>Three sounds from three places. The computer mixes them as if three microphones in one room heard everything at once.</p>
+          <p>Three sounds. The computer mixes them as if three microphones in one room heard everything at once.</p>
+          <div class="controls seg" id="demo-src" role="group" aria-label="Sounds to use">
+            <button type="button" data-src="examples" aria-pressed="true">Example sounds</button>
+            <button type="button" data-src="students" aria-pressed="false">Student recordings</button>
+          </div>
           <div class="controls"><button type="button" id="play-all" class="play">Play all together</button></div>
         </div>
         <div id="sources" class="tracks grid3"></div>
@@ -386,7 +395,7 @@ ALL PASS (pass = every output matches a different source with |r| &gt; 0.95)</pr
 
     <footer class="site-footer box">
       <h2>Sound credits</h2>
-      <p>Demo sounds: openly licensed recordings (see credits); students’ own recordings will replace them. Each is a 9-second excerpt, made mono, 16 kHz, and loudness-normalized. Details in <a href="audio/credits.json">audio/credits.json</a>.</p>
+      <p>The student recordings above are real recordings from the summer project. The three example sounds (Kitchen, Hall, Classroom) used by default in the demo are openly licensed recordings, not made by students. Each example is a 9-second excerpt, made mono, 16 kHz, and loudness-normalized. Details in <a href="audio/credits.json">audio/credits.json</a>.</p>
       <ul class="plain-list credits">
         <li><strong>Kitchen:</strong> “Kitchen Tidy-up” by starlite (via PDSounds), public domain. <a href="https://commons.wikimedia.org/wiki/File:Kitchen_tidy_up.ogg">Wikimedia Commons</a>. Excerpt 0:22–0:31.</li>
         <li><strong>Hall:</strong> “Koulu-ambience1” (a school hallway in Helsinki) by Suihkuturbiini8k, CC0 1.0. <a href="https://commons.wikimedia.org/wiki/File:Koulu-ambience1.wav">Wikimedia Commons</a>. Excerpt 0:05–0:14.</li>
