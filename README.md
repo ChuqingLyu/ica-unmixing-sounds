@@ -1,4 +1,6 @@
-# Unmixing School Sounds
+# Music in Everyday Life & Unsupervised Learning
+
+生活中的音乐与无监督学习 — kids record the sounds and music of their everyday lives, mix them, and watch a computer pull them apart with ICA (unsupervised learning, no answers given).
 
 A small ICA (Independent Component Analysis) project for K-12 learners: kids collect everyday sounds from home and the neighborhood, the computer mixes them as if several microphones in one room heard everything at once, and ICA pulls them apart again using only the mixed recordings.
 
@@ -6,11 +8,17 @@ A small ICA (Independent Component Analysis) project for K-12 learners: kids col
 
 ## The activity
 
-I ran this as a two-week summer-vacation project assignment: about 6 Grade 7–8 students from Bocuide School, Guangzhou recorded sounds from their neighborhoods, homes, and communities with boom-pole microphones. The page then lets learners mix and unmix sounds hands-on, during both recording and analysis.
+I ran this as a two-week summer-vacation project assignment with about 6 Grade 7–8 students from Bocuide School, Guangzhou. They (1) recorded everyday sounds and music around home, their neighborhoods and places like a train station with a boom-pole microphone and headphones, (2) trimmed and looked at waveforms in Audacity and multitrack editors, and (3) mixed and unmixed sounds with the ICA tools on this page. The page then lets learners mix and unmix sounds hands-on, during both recording and analysis.
 
 Vanilla JavaScript, no dependencies. Everything runs in the browser.
 
-## What's on the page
+## Page structure
+
+Photo hero → About → horizontal showcase strip (photos, student recording cards, submissions; scroll-snap, arrow buttons, mouse drag, touch) → How the activity worked → Why I designed it this way → What is ICA? → **How ICA unmixes sounds** (3-step illustrated story + one before/after listen pair: three student recordings mixed digitally and unmixed by FastICA in the browser) → **Try the full interactive demo** (a closed `<details>` holding everything below; `?autorun=1`, `?labround=N`, `?vizstep=N` open it) → Student feedback ("Confusion → How I helped/guided" cards; code and training figures collapsed) → Is this AI? / Real life → Challenges.
+
+Student names are pseudonyms. Set `student` (pseudonym) and `location` per entry in `CLASSROOM_CLIPS` in `ica.js`; empty `location` shows "[location — to be added]".
+
+## Interactive demo details
 
 - **The ICA visualizer** (2 sounds, 2 mics). Each dot is one moment of time. Step through: the sounds as dots → mixed up (2×2 sliders) → move to the middle (centering) → make it round (whitening) → turn the dial (rotation slider with a live independence meter, histograms of the two outputs, and Play buttons). "Let the computer turn it" runs 2D FastICA round by round. Honors `prefers-reduced-motion`.
 - **The full demo** (3 sounds, 3 mics): play the sounds, edit or randomize the 3×3 loudness table, then:

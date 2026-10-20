@@ -2,6 +2,7 @@
    The math part (top) also runs in Node for testing: node test/ica-test.js */
 
 // ===================== Settings you can change =====================
+// Students' own recordings. student = pseudonym, location = where it was recorded ('' shows a placeholder).
 // Students' own recordings (Bocuide School summer project), shown as cards with a player and a
 // spectrogram strip. Entries with demo: true (exactly 3) can be used as the full demo's sources via
 // the toggle; the demo uses the first 9 seconds of each. Older example format:
@@ -12,19 +13,19 @@
 // each recording is cut or padded to 9 seconds. With 3 or more recordings, the full demo uses the
 // first three of them instead of the examples. All recordings also show up in the visualizer's lists.
 var CLASSROOM_CLIPS = [
-  { label: 'Student recording 1', short: 'Rec 1', src: 'audio/students/student-1.mp3', strip: 'audio/students/student-1-spec.png', seconds: 8,  color: '#a78bfa' },
-  { label: 'Student recording 2', short: 'Rec 2', src: 'audio/students/student-2.mp3', strip: 'audio/students/student-2-spec.png', seconds: 30, color: '#7ee081', demo: true },
-  { label: 'Student recording 3', short: 'Rec 3', src: 'audio/students/student-3.mp3', strip: 'audio/students/student-3-spec.png', seconds: 30, color: '#6cb6ff', demo: true },
-  { label: 'Student recording 4', short: 'Rec 4', src: 'audio/students/student-4.mp3', strip: 'audio/students/student-4-spec.png', seconds: 30, color: '#f0e36b' },
-  { label: 'Student recording 5', short: 'Rec 5', src: 'audio/students/student-5.mp3', strip: 'audio/students/student-5-spec.png', seconds: 22, color: '#ff8a65' },
-  { label: 'Student recording 6', short: 'Rec 6', src: 'audio/students/student-6.mp3', strip: 'audio/students/student-6-spec.png', seconds: 30, color: '#f48fb1', demo: true }
+  { label: 'Recording 1', student: 'Lily', location: '', short: 'Rec 1', src: 'audio/students/student-1.mp3', strip: 'audio/students/student-1-spec.png', seconds: 8,  color: '#a78bfa' },
+  { label: 'Recording 2', student: 'Max', location: '', short: 'Rec 2', src: 'audio/students/student-2.mp3', strip: 'audio/students/student-2-spec.png', seconds: 30, color: '#7ee081', demo: true },
+  { label: 'Recording 3', student: 'Chloe', location: '', short: 'Rec 3', src: 'audio/students/student-3.mp3', strip: 'audio/students/student-3-spec.png', seconds: 30, color: '#6cb6ff', demo: true },
+  { label: 'Recording 4', student: 'Ethan', location: '', short: 'Rec 4', src: 'audio/students/student-4.mp3', strip: 'audio/students/student-4-spec.png', seconds: 30, color: '#f0e36b' },
+  { label: 'Recording 5', student: 'Mia', location: '', short: 'Rec 5', src: 'audio/students/student-5.mp3', strip: 'audio/students/student-5-spec.png', seconds: 22, color: '#ff8a65' },
+  { label: 'Recording 6', student: 'Leo', location: '', short: 'Rec 6', src: 'audio/students/student-6.mp3', strip: 'audio/students/student-6-spec.png', seconds: 30, color: '#f48fb1', demo: true }
 ];
 
 // Screenshots or photos of students' submitted work, shown as image cards in
 // "Student recordings & submissions". When empty, placeholder cards are shown. Example entry:
 //   { title: 'Sound map (Student A)', src: 'submissions/sound-map-a.png', caption: 'A short caption' }
 var STUDENT_SUBMISSIONS = [
-  { title: 'Student editing their recordings in a DAW', src: 'images/activity/daw-projector.jpg', caption: 'Students reviewing and editing their recordings.' }
+  { title: 'Editing at home', src: 'images/activity/editing-at-home.jpg', caption: 'Audacity and a multitrack editor on a home computer.' }
 ];
 
 // Example sounds: openly licensed recordings standing in until the classroom recordings are added.
@@ -1244,8 +1245,8 @@ var EXAMPLE_CLIPS = [
     var box = $('kids-slots'), html = '';
     CLASSROOM_CLIPS.forEach(function (c) {
       var col = colorOf(c);
-      html += '<div class="card" style="border-color:' + rgba(col, 0.5) + '"><strong style="color:' + col + '">' + esc(c.label) + '</strong>' +
-        '<span class="card-tag">' + (c.seconds ? c.seconds + ' s' + (c.seconds >= 30 ? ' excerpt' : '') + ' · ' : '') + (c.description ? esc(c.description) : '[Description — to be added]') + '</span>' +
+      html += '<div class="card s-card rec" style="border-color:' + rgba(col, 0.5) + '"><strong style="color:' + col + '">' + esc(c.label) + (c.student ? ' · ' + esc(c.student) : '') + '</strong>' +
+        '<span class="card-tag">' + (c.location ? esc(c.location) : '[location — to be added]') + (c.seconds ? ' · ' + c.seconds + ' s' : '') + '</span>' +
         (c.strip ? '<img class="strip-img" src="' + esc(c.strip) + '" alt="Spectrogram of ' + esc(c.label) + '" loading="lazy">' : '') +
         '<audio controls preload="none" src="' + esc(c.src) + '"></audio></div>';
     });
@@ -1256,11 +1257,11 @@ var EXAMPLE_CLIPS = [
     var sub = $('submissions'), sh = '';
     if (!sub) return;
     STUDENT_SUBMISSIONS.forEach(function (c) {
-      sh += '<figure class="card shot"><img src="' + esc(c.src) + '" alt="' + esc(c.title || '') + '" loading="lazy">' +
+      sh += '<figure class="card shot s-card"><img src="' + esc(c.src) + '" alt="' + esc(c.title || '') + '" loading="lazy">' +
         '<figcaption><strong>' + esc(c.title || '') + '</strong>' + (c.caption ? ' ' + esc(c.caption) : '') + '</figcaption></figure>';
     });
     if (!STUDENT_SUBMISSIONS.length) for (var k = 0; k < 2; k++)
-      sh += '<div class="card empty shot"><div class="img-slot" aria-hidden="true"></div><strong>[Submission example — to be added]</strong></div>';
+      sh += '<div class="card empty shot s-card"><div class="img-slot" aria-hidden="true"></div><strong>[Submission example — to be added]</strong></div>';
     sub.innerHTML = sh;
   }
 
@@ -1389,8 +1390,59 @@ var EXAMPLE_CLIPS = [
     });
   }
 
+  // Horizontal showcase strip: arrow buttons + mouse drag (touch scrolls natively).
+  function strip() {
+    var el = $('strip'); if (!el) return;
+    var sec = el.closest('section');
+    function by(d) { el.scrollBy({ left: d * Math.max(260, el.clientWidth * 0.8), behavior: reduceMotion ? 'auto' : 'smooth' }); }
+    sec.querySelector('.strip-prev').addEventListener('click', function () { by(-1); });
+    sec.querySelector('.strip-next').addEventListener('click', function () { by(1); });
+    el.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight') { by(1); e.preventDefault(); } if (e.key === 'ArrowLeft') { by(-1); e.preventDefault(); } });
+    var down = false, x0 = 0, s0 = 0, moved = false;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse' || e.target.closest('audio, button, a')) return;
+      down = true; moved = false; x0 = e.clientX; s0 = el.scrollLeft; el.classList.add('dragging');
+    });
+    root.addEventListener('pointermove', function (e) {
+      if (!down) return; var dx = e.clientX - x0; if (Math.abs(dx) > 4) moved = true; el.scrollLeft = s0 - dx; e.preventDefault();
+    });
+    root.addEventListener('pointerup', function () { if (down) { down = false; el.classList.remove('dragging'); } });
+    el.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+    el.addEventListener('dragstart', function (e) { e.preventDefault(); });
+  }
+
+  // Before/after listen pair: three student recordings mixed digitally, then unmixed by FastICA.
+  function beforeAfter() {
+    var studs = clips.filter(function (c) { return c.kind === 'kids' && c.demo; });
+    if (studs.length !== 3 || !$('ba-mix')) { if ($('listen')) $('listen').hidden = true; return; }
+    var S = studs.map(function (c) { return c.x; }), X = mix(DEFAULT_MIX, S);
+    var res = fastICA(X, { maxIter: 200, tol: 1e-6, seed: 1 }), m = matchComponents(res.Y, S);
+    playButton($('ba-mix'), function () { return X[0]; }); $('ba-mix').disabled = false;
+    var box = $('ba-out'); box.innerHTML = '';
+    [0, 1, 2].forEach(function (j) {          // one button per original recording, in order
+      var i = m.findIndex(function (q) { return q.source === j; }), c = studs[j];
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'play';
+      b.style.setProperty('--c', colorOf(c)); b.textContent = c.label;
+      box.appendChild(b); playButton(b, function () { return res.Y[i]; });
+    });
+    $('ba-note').textContent = 'Each output matched one recording: ' + m.map(function (q) { return q.abs.toFixed(2); }).join(', ') +
+      ' (1.00 = perfect), after ' + res.iterations + ' rounds.';
+    root.__baResult = { iterations: res.iterations, match: m };
+  }
+  // The full demo sits in a closed <details>; redraw canvases when it opens. URL params open it.
+  function demoDetails() {
+    var d = $('full-demo'); if (!d) return;
+    d.addEventListener('toggle', function () {
+      if (!d.open) return;
+      root.dispatchEvent(new Event('resize'));
+      setTimeout(function () { if (L.res) labRender(true); if (T.Z) tryUpdate(); }, 200);
+    });
+    if (/[?&](autorun=1\b|labround=|vizstep=)/.test(params) || /^#(viz|school|try|lab|game)$/.test(root.location.hash)) d.open = true;
+  }
+
   function init() {
     hero();
+    strip();
     reveals();
     highlight();
     kidsSlots();
@@ -1410,6 +1462,8 @@ var EXAMPLE_CLIPS = [
         document.body.setAttribute('data-sounds', 'loaded');
         vizInit();
         demoInit();
+        beforeAfter();
+        demoDetails();
         if (/[?&](autorun=1\b|labround=)/.test(params)) separate();
       })
       .catch(function (e) {

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Unmixing School Sounds · ICA project · Lucy Lyu</title>
-  <meta name="description" content="A small ICA project: kids collect everyday sounds from home and the neighborhood, mix them, and watch a computer pull them apart.">
+  <title>Music in Everyday Life &amp; Unsupervised Learning · Lucy Lyu</title>
+  <meta name="description" content="Music in Everyday Life & Unsupervised Learning: kids record everyday sounds and music, mix them, and watch a computer pull them apart.">
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -12,8 +12,9 @@
   <header class="hero site-header">
     <canvas id="hero-canvas" aria-hidden="true"></canvas>
     <div class="hero-inner">
-      <h1>Unmixing School Sounds</h1>
-      <p class="subtitle">A small ICA project: kids collect everyday sounds from home and the neighborhood, mix them, and watch a computer pull them apart</p>
+      <h1>Music in Everyday Life &amp; Unsupervised Learning</h1>
+      <p class="zh" lang="zh-CN">生活中的音乐与无监督学习</p>
+      <p class="subtitle">Kids record the sounds and music of their everyday lives, mix them, and watch a computer pull them apart, with no answers given.</p>
       <a class="gh-link" href="https://github.com/ChuqingLyu/ica-unmixing-sounds" target="_blank" rel="noopener">
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
         View source on GitHub
@@ -24,60 +25,62 @@
   <main class="page">
 
     <nav class="toc box" aria-label="On this page">
-      <a href="#about">About</a> · <a href="#activity">The activity</a> · <a href="#matters">Why it matters</a> · <a href="#why-activity">Why an activity</a> ·
-      <a href="#what">What is ICA?</a> · <a href="#students">Student work</a> · <a href="#viz">Visualizer</a> · <a href="#school">Full demo</a> ·
-      <a href="#training">Behind the scenes</a> · <a href="#ai">Is this AI?</a> · <a href="#uses">Real life</a> · <a href="#challenges">Challenges</a> · <a href="#learners">Learners</a>
+      <a href="#about">About</a> · <a href="#showcase">From the activity</a> · <a href="#activity">How it works</a> · <a href="#why">Why this design</a> ·
+      <a href="#what">What is ICA?</a> · <a href="#ica">How ICA works</a> · <a href="#full-demo">Full demo</a> ·
+      <a href="#feedback">Student feedback</a> · <a href="#ai">Is this AI?</a> · <a href="#uses">Real life</a> · <a href="#challenges">Challenges</a>
     </nav>
 
-    <div class="row">
-      <section class="box" id="about">
-        <h2>About this project</h2>
-        <p>This is a small project about ICA (Independent Component Analysis) for K-12 learners. Kids record everyday sounds from home and the neighborhood, the computer mixes them as if several microphones in one room heard them at once, and then ICA pulls them apart again using only the mixed recordings.</p>
-        <p>Everything runs in your browser. You can drag, listen and compare. No formulas needed.</p>
-        <p id="load-status" class="muted" role="status">This page needs JavaScript to load the sounds.</p>
-      </section>
-      <section class="box" id="idea">
-        <h2>Where the idea came from</h2>
-        <p>I wanted kids to meet ICA somewhere familiar and fun. The point isn't the math. It's to make the cocktail party problem something they can actually hear and see being solved.</p>
-        <p>The cocktail party problem: in a noisy room you can still follow one friend's voice. Can a computer pull one sound out of a mix too?</p>
-      </section>
-    </div>
-
-    <section class="box split" id="activity">
-      <h2>The activity</h2>
-      <div class="cols">
-        <div>
-          <p>I ran this as a summer-vacation project assignment. Over two weeks, about 6 Grade 7–8 students from Bocuide School, Guangzhou recorded sounds from their neighborhoods, homes, and communities with boom-pole microphones.</p>
-          <p>On this page you can mix and unmix sounds with ICA, including some of their recordings.</p>
-        </div>
-        <div class="photos">
-          <figure class="wide"><img src="images/activity/activity-group.jpg" alt="Students working on laptops around a table during the activity; faces blurred" loading="lazy" width="1280" height="853"></figure>
-          <figure><img src="images/activity/activity-listening.jpg" alt="A student with headphones working on a laptop; faces blurred" loading="lazy" width="1280" height="1919"></figure>
-          <figure><img src="images/activity/activity-headphones.jpg" alt="A student wearing headphones looking at a laptop; face blurred" loading="lazy" width="1280" height="1920"></figure>
-          <figcaption class="muted small">Students during the activity. Faces are blurred for privacy.</figcaption>
-        </div>
-      </div>
+    <section class="box intro" id="about">
+      <h2>About this project</h2>
+      <p class="lead">Your ears do something amazing every day. On a busy street you can still pick out one song, one voice, one train. Can a computer do that too, without anyone telling it the answer?</p>
+      <p>In this project, students from Bocuide School, Guangzhou recorded the sounds and music of their own lives. Then they used the tools on this page to mix those sounds together and let a computer pull them apart again. That “pulling apart” is called ICA (Independent Component Analysis), and it is a kind of unsupervised learning.</p>
+      <p id="load-status" class="muted" role="status">This page needs JavaScript to load the sounds.</p>
     </section>
 
-    <div class="row">
-      <section class="box" id="matters">
-        <h2>Why this activity matters</h2>
+    <section class="box showcase" id="showcase">
+      <div class="showcase-head">
+        <h2>From the activity</h2>
+        <div class="strip-btns">
+          <button type="button" class="strip-prev" aria-label="Scroll left">◀</button>
+          <button type="button" class="strip-next" aria-label="Scroll right">▶</button>
+        </div>
+      </div>
+      <p class="muted">Photos, recordings and work from the summer project. Scroll or drag sideways.</p>
+      <div class="strip" id="strip" tabindex="0" aria-label="Photos and recordings from the activity">
+        <figure class="s-card photo"><img src="images/activity/recording-station.jpg" alt="A student with headphones holding a boom-pole microphone at a high-speed train station; face blurred" loading="lazy"><figcaption>Recording at a train station with a boom-pole mic and headphones</figcaption></figure>
+        <figure class="s-card photo"><img src="images/activity/activity-group.jpg" alt="Students working on laptops around tables; faces blurred" loading="lazy"><figcaption>Working together at the tables</figcaption></figure>
+        <figure class="s-card photo tall"><img src="images/activity/activity-laptop.jpg" alt="A student with headphones working on a laptop; faces blurred" loading="lazy"><figcaption>Listening back on a laptop</figcaption></figure>
+        <div id="submissions" class="s-group"></div>
+        <div id="kids-slots" class="s-group"></div>
+      </div>
+      <p class="muted small">Faces are blurred for privacy.</p>
+    </section>
+
+    <section class="box" id="activity">
+      <h2>How the activity worked</h2>
+      <p>I gave it as a summer-vacation project. Over two weeks, about 6 Grade 7–8 students did three things:</p>
+      <ol class="steps3">
+        <li><span class="n">1</span><h3>Record</h3><p>With a boom-pole microphone and headphones, they recorded everyday sounds and music around their homes, their neighborhoods and places like a train station.</p></li>
+        <li><span class="n">2</span><h3>Edit and look</h3><p>In Audacity and other multitrack editors, they trimmed their recordings and looked at the waveforms: the “shape” of each sound.</p></li>
+        <li><span class="n">3</span><h3>Mix and unmix</h3><p>With the ICA tools on this page, they mixed sounds together and watched the computer pull them apart, without telling it which sound is which. That is unsupervised learning, done on music and sounds from their own lives.</p></li>
+      </ol>
+    </section>
+
+    <section class="box split" id="why">
+      <h2>Why I designed it this way</h2>
+      <div class="cols">
         <ul class="plain-list">
-          <li><strong>Their own data.</strong> Kids turn everyday sounds into data they collected themselves, so the data belongs to them and they learn what data really is.</li>
-          <li><strong>A real AI problem, close to home.</strong> They meet the cocktail party problem (source separation), a real AI problem, in their own surroundings.</li>
-          <li><strong>From listening to learning.</strong> It connects listening, a skill they already have, to how a machine can learn without labels.</li>
+          <li><strong>Start from their own ears.</strong> Everyone already knows how to listen. Picking one sound out of a noisy place is something kids do every day, so the idea of “unmixing” feels familiar before it has a name.</li>
+          <li><strong>Their own data.</strong> When kids collect the sounds themselves, the data belongs to them. They see that data is not just numbers in a book; it is the world around them.</li>
+          <li><strong>A real AI problem.</strong> Pulling sounds apart (the “cocktail party problem”) is a real problem that hearing aids and voice assistants work on.</li>
         </ul>
-      </section>
-      <section class="box" id="why-activity">
-        <h2>Why an activity instead of formulas</h2>
         <ul class="plain-list">
-          <li>ICA is usually taught with matrices and probability. Kids without that background have nothing to build on; some of my students had no prior knowledge to grasp ICA at all.</li>
-          <li>Here they collect the sounds, hear the mix, and turn the dial themselves, so the idea comes from experience first.</li>
-          <li>The math steps (centering, whitening, rotating) match steps they already did by hand.</li>
-          <li>The formulas can come later.</li>
+          <li><strong>Hands first, formulas later.</strong> ICA is usually taught with matrices and probability. Some of my students had no background for that at all, so they had nothing to build on.</li>
+          <li>Here they record, hear the mix, and turn the dials themselves. The idea comes from doing it.</li>
+          <li>The math steps (moving the dots to the middle, making the cloud round, turning it) match steps they already tried by hand on this page. The formulas can come later.</li>
         </ul>
-      </section>
-    </div>
+      </div>
+    </section>
 
     <section class="box split" id="what">
       <h2>What is ICA?</h2>
@@ -93,17 +96,40 @@
       </div>
     </section>
 
-    <section class="box" id="students">
-      <h2>Student recordings &amp; submissions</h2>
-      <h3>Recordings</h3>
-      <div id="kids-slots" class="cards"></div>
-      <h3>Submitted work</h3>
-      <div id="submissions" class="cards"></div>
+    <section class="box" id="ica">
+      <h2>How ICA unmixes sounds</h2>
+      <p>I built this page to explain ICA without formulas. Kids first play with two sounds: each moment of sound becomes a dot, and they turn a dial until an independence meter peaks. Then the computer does the same, turning the dial a little each round. Here is the whole idea in three steps:</p>
+      <ol class="story">
+        <li><figure><svg viewBox="0 0 300 120" role="img" aria-label="Three different sounds flow into two microphones and get mixed">
+  <g transform="translate(0,10)"><polyline points="0,12.0 2,5.7 4,4.2 6,8.6 8,15.5 10,14.0 12,13.5 14,12.0 16,10.4 18,10.1 20,11.2 22,12.9 24,14.0 26,13.5 28,11.9 30,5.6 32,4.3 34,8.8 36,15.8 38,19.9 40,13.5 42,11.9 44,10.4 46,10.1 48,11.2 50,13.0 52,14.0 54,13.5 56,11.9 58,10.4 60,4.3 62,9.1 64,16.0 66,19.9 68,17.8 70,11.8 72,10.3 74,10.1 76,11.3 78,13.0 80,14.0 82,13.4 84,11.8 86,10.3 88,10.1 90,9.3 92,16.2 94,20.0 96,17.6 98,11.1 100,10.3 102,10.1 104,11.4 106,13.1 108,14.0 110,13.4 112,11.7 114,10.3 116,10.1 118,11.4 120,16.5" fill="none" stroke="#ffb347" stroke-width="1.6"/></g><g transform="translate(0,48)"><polyline points="0,12.0 2,9.6 4,7.5 6,5.9 8,5.1 10,5.1 12,6.0 14,7.5 16,9.7 18,12.1 20,14.5 22,16.6 24,18.1 26,18.9 28,18.9 30,18.0 32,16.4 34,14.3 36,11.9 38,9.5 40,7.4 42,5.9 44,5.1 46,5.1 48,6.0 50,7.6 52,9.8 54,12.2 56,14.6 58,16.6 60,18.2 62,18.9 64,18.9 66,18.0 68,16.3 70,14.2 72,11.8 74,9.4 76,7.3 78,5.8 80,5.1 82,5.2 84,6.1 86,7.7 88,9.9 90,12.3 92,14.7 94,16.7 96,18.2 98,18.9 100,18.8 102,17.9 104,16.2 106,14.1 108,11.6 110,9.3 112,7.2 114,5.8 116,5.1 118,5.2 120,6.1" fill="none" stroke="#3fd0c9" stroke-width="1.6"/></g><g transform="translate(0,86)"><polyline points="0,12.0 2,10.2 4,12.9 6,16.7 8,8.8 10,6.0 12,17.9 14,17.5 16,4.3 18,8.5 20,19.9 22,13.1 24,5.9 26,12.5 28,14.9 30,11.5 32,11.5 34,13.3 36,14.9 38,7.7 40,8.4 42,19.1 44,14.5 46,3.2 48,11.6 50,20.6 52,10.3 54,5.5 56,14.6 58,15.4 60,10.3 62,11.5 64,12.9 66,13.2 68,7.8 70,10.9 72,19.1 74,11.4 76,3.5 78,14.9 80,20.0 82,7.3 84,6.2 86,16.9 88,15.0 90,8.7 92,11.3 94,12.2 96,12.1 98,8.7 100,12.9 102,18.0 104,8.9 106,5.0 108,17.6 110,18.1 112,4.8 114,8.1 116,18.9 118,13.4 120,7.2" fill="none" stroke="#ff6fae" stroke-width="1.6"/></g>
+  <g stroke="#56657a" stroke-width="1" fill="none"><path d="M124 22 C170 22 190 35 236 38"/><path d="M124 22 C170 22 190 75 236 84"/><path d="M124 60 C170 60 200 40 236 38"/><path d="M124 60 C170 60 200 80 236 84"/><path d="M124 98 C170 98 190 45 236 38"/><path d="M124 98 C170 98 190 88 236 84"/></g>
+  <g transform="translate(252,38)"><g fill="none" stroke="#c9d1dc" stroke-width="1.6"><rect x="-5" y="-9" width="10" height="16" rx="5"/><path d="M-9 1a9 9 0 0 0 18 0M0 10v6"/></g></g><g transform="translate(252,84)"><g fill="none" stroke="#c9d1dc" stroke-width="1.6"><rect x="-5" y="-9" width="10" height="16" rx="5"/><path d="M-9 1a9 9 0 0 0 18 0M0 10v6"/></g></g></svg></figure><h3><span class="n">1</span> Sounds mix into the mics</h3><p>Several sounds play at once. Each mic hears all of them, just at different loudness.</p></li>
+        <li><figure><svg viewBox="0 0 300 120" role="img" aria-label="A dial turns round by round while a meter climbs">
+  <circle cx="70" cy="60" r="40" fill="none" stroke="#56657a" stroke-width="2"/><path class="dial-hand" d="M70 60 L100 34" stroke="#3fd0c9" stroke-width="3" stroke-linecap="round"/><circle cx="70" cy="60" r="5" fill="#3fd0c9"/>
+  <path d="M30 60 A40 40 0 0 1 110 60" fill="none" stroke="#3fd0c9" stroke-opacity=".25" stroke-width="8"/>
+  <g transform="translate(150,20)"><rect width="130" height="80" rx="4" fill="#080c13" stroke="#56657a"/><polyline points="8,70 28,66 48,58 68,40 88,22 108,18 122,18" fill="none" stroke="#3fd0c9" stroke-width="2"/><g fill="#fff"><circle cx="8" cy="70" r="2"/><circle cx="28" cy="66" r="2"/><circle cx="48" cy="58" r="2"/><circle cx="68" cy="40" r="2"/><circle cx="88" cy="22" r="2"/><circle cx="108" cy="18" r="2"/></g></g>
+  <text x="215" y="114" fill="#8a97a8" font-size="10" text-anchor="middle" font-family="monospace">rounds →</text></svg></figure><h3><span class="n">2</span> The computer keeps adjusting</h3><p>Round by round, it turns its “dial” until the outputs are as independent from each other as possible. Nobody tells it the answers.</p></li>
+        <li><figure><svg viewBox="0 0 300 120" role="img" aria-label="Three separate sounds come out, each on its own">
+  <g transform="translate(20,0)"><g transform="translate(0,4)"><polyline points="0,12.0 2,7.5 4,6.9 6,9.3 8,8.0 10,8.3 12,13.5 14,11.8 16,4.8 18,7.6 20,15.7 22,16.5 24,15.7 26,18.5 28,17.1 30,12.8 32,11.4 34,12.7 36,14.6 38,11.6 40,10.0 42,11.5 44,6.7 46,1.3 48,7.3 50,14.8 52,12.9 54,11.4 56,14.4 58,13.7 60,11.9 62,14.6 64,17.8 66,18.9 68,14.8 70,12.5 72,12.5 74,7.4 76,4.5 78,11.3 80,14.6 82,8.2 84,5.7 86,9.2 88,9.3 90,9.7 92,14.8 94,17.8 96,17.7 98,14.2 100,13.7 102,15.2 104,12.1 106,11.7 108,17.3 110,15.2 112,5.7 114,4.1 116,8.3 118,7.8 120,8.2" fill="none" stroke="#c9d1dc" stroke-width="1.6"/></g><g transform="translate(0,56)"><polyline points="0,12.0 2,7.5 4,6.9 6,9.3 8,8.0 10,8.3 12,13.5 14,11.8 16,4.8 18,7.6 20,15.7 22,16.5 24,15.7 26,18.5 28,17.1 30,12.8 32,11.4 34,12.7 36,14.6 38,11.6 40,10.0 42,11.5 44,6.7 46,1.3 48,7.3 50,14.8 52,12.9 54,11.4 56,14.4 58,13.7 60,11.9 62,14.6 64,17.8 66,18.9 68,14.8 70,12.5 72,12.5 74,7.4 76,4.5 78,11.3 80,14.6 82,8.2 84,5.7 86,9.2 88,9.3 90,9.7 92,14.8 94,17.8 96,17.7 98,14.2 100,13.7 102,15.2 104,12.1 106,11.7 108,17.3 110,15.2 112,5.7 114,4.1 116,8.3 118,7.8 120,8.2" fill="none" stroke="#c9d1dc" stroke-width="1.6"/></g></g>
+  <path d="M150 60 h30 m-8 -7 l8 7 l-8 7" stroke="#c9d1dc" stroke-width="2" fill="none"/>
+  <g transform="translate(180,0)"><g transform="scale(0.95)"><g transform="translate(0,10)"><polyline points="0,12.0 2,5.7 4,4.2 6,8.6 8,15.5 10,14.0 12,13.5 14,12.0 16,10.4 18,10.1 20,11.2 22,12.9 24,14.0 26,13.5 28,11.9 30,5.6 32,4.3 34,8.8 36,15.8 38,19.9 40,13.5 42,11.9 44,10.4 46,10.1 48,11.2 50,13.0 52,14.0 54,13.5 56,11.9 58,10.4 60,4.3 62,9.1 64,16.0 66,19.9 68,17.8 70,11.8 72,10.3 74,10.1 76,11.3 78,13.0 80,14.0 82,13.4 84,11.8 86,10.3 88,10.1 90,9.3 92,16.2 94,20.0 96,17.6 98,11.1 100,10.3 102,10.1 104,11.4 106,13.1 108,14.0 110,13.4 112,11.7 114,10.3 116,10.1 118,11.4 120,16.5" fill="none" stroke="#ffb347" stroke-width="1.6"/></g><g transform="translate(0,48)"><polyline points="0,12.0 2,9.6 4,7.5 6,5.9 8,5.1 10,5.1 12,6.0 14,7.5 16,9.7 18,12.1 20,14.5 22,16.6 24,18.1 26,18.9 28,18.9 30,18.0 32,16.4 34,14.3 36,11.9 38,9.5 40,7.4 42,5.9 44,5.1 46,5.1 48,6.0 50,7.6 52,9.8 54,12.2 56,14.6 58,16.6 60,18.2 62,18.9 64,18.9 66,18.0 68,16.3 70,14.2 72,11.8 74,9.4 76,7.3 78,5.8 80,5.1 82,5.2 84,6.1 86,7.7 88,9.9 90,12.3 92,14.7 94,16.7 96,18.2 98,18.9 100,18.8 102,17.9 104,16.2 106,14.1 108,11.6 110,9.3 112,7.2 114,5.8 116,5.1 118,5.2 120,6.1" fill="none" stroke="#3fd0c9" stroke-width="1.6"/></g><g transform="translate(0,86)"><polyline points="0,12.0 2,10.2 4,12.9 6,16.7 8,8.8 10,6.0 12,17.9 14,17.5 16,4.3 18,8.5 20,19.9 22,13.1 24,5.9 26,12.5 28,14.9 30,11.5 32,11.5 34,13.3 36,14.9 38,7.7 40,8.4 42,19.1 44,14.5 46,3.2 48,11.6 50,20.6 52,10.3 54,5.5 56,14.6 58,15.4 60,10.3 62,11.5 64,12.9 66,13.2 68,7.8 70,10.9 72,19.1 74,11.4 76,3.5 78,14.9 80,20.0 82,7.3 84,6.2 86,16.9 88,15.0 90,8.7 92,11.3 94,12.2 96,12.1 98,8.7 100,12.9 102,18.0 104,8.9 106,5.0 108,17.6 110,18.1 112,4.8 114,8.1 116,18.9 118,13.4 120,7.2" fill="none" stroke="#ff6fae" stroke-width="1.6"/></g></g></g></svg></figure><h3><span class="n">3</span> Each sound comes out on its own</h3><p>When the outputs are as independent as they can get, each one holds just one sound.</p></li>
+      </ol>
+      <div class="listen" id="listen">
+        <h3>Listen: before and after</h3>
+        <p class="muted small">Three student recordings, mixed by the computer, then unmixed by ICA.</p>
+        <div class="listen-row">
+          <div class="listen-card before"><span class="fb-tag conf">Before</span><p>The mix (what one mic hears)</p><button type="button" class="play" id="ba-mix" disabled>Play the mix</button></div>
+          <div class="listen-arrow" aria-hidden="true">→</div>
+          <div class="listen-card after"><span class="fb-tag help">After</span><p>Separated by ICA</p><div class="controls" id="ba-out"></div><p class="muted small" id="ba-note" role="status"></p></div>
+        </div>
+      </div>
     </section>
 
+    <details class="box demo-wrap" id="full-demo">
+      <summary>Try the full interactive demo</summary>
     <section class="box" id="viz">
       <h2>The ICA visualizer</h2>
-      <p>The smallest version of the problem: two sounds, two microphones. Pick two sounds and walk through the steps.</p>
+      <p>Two sounds, two mics. Each moment of sound becomes a dot. Move the dots to the middle, make the cloud round, then turn the dial until the meter peaks.</p>
       <div class="pick">
         <label>Sound A <select id="viz-sa"></select></label>
         <label>Sound B <select id="viz-sb"></select></label>
@@ -176,7 +202,7 @@
       <div class="step-row" id="try">
         <div>
           <h3>3 · You try first</h3>
-          <p>Before the computer runs, try it yourself. The mic recordings are already centered and whitened; now turn the three dials and listen. Each dial turns the sound “cloud” in a different direction. Watch the independence meter: higher means the outputs sound less like a blend.</p>
+          <p>Before the computer runs, try it yourself. The mic recordings are already moved to the middle and made round; now turn the three dials and listen. Each dial turns the sound “cloud” in a different direction. Watch the independence meter: higher means the outputs sound less like a blend.</p>
           <div class="knobs">
             <label>Dial 1 <input type="range" id="try-a0" min="0" max="180" step="0.5" value="0"><output id="try-a0-out">0°</output></label>
             <label>Dial 2 <input type="range" id="try-a1" min="0" max="180" step="0.5" value="0"><output id="try-a1-out">0°</output></label>
@@ -237,8 +263,45 @@
       </div>
     </section>
 
-    <section class="box" id="training">
-      <h2>Behind the scenes: training the model</h2>
+    </details>
+
+    <section class="box" id="feedback">
+      <h2>Student feedback</h2>
+      <p>Where students got stuck, and how I helped.</p>
+      <div class="fb-grid one">
+        <article class="fb-card real">
+          <div class="fb-who">Lily</div>
+          <div class="fb-row"><span class="fb-tag conf">Confusion</span><p>She didn’t know how to separate the sound sources. To her, the mix was just “one sound”.</p></div>
+          <div class="fb-arrow" aria-hidden="true">→</div>
+          <div class="fb-row"><span class="fb-tag help">How I helped</span><p><span class="placeholder">[to be added]</span></p></div>
+        </article>
+      </div>
+      <h3>Common confusions and how I guided students</h3>
+      <div class="fb-grid">
+        <article class="fb-card">
+          <div class="fb-row"><span class="fb-tag conf">Confusion</span><p>“The computer already knows what each sound should be.”</p></div>
+          <div class="fb-arrow" aria-hidden="true">→</div>
+          <div class="fb-row"><span class="fb-tag help">How I guided</span><p>Nobody gives ICA the answers. It only looks for outputs that are as independent as possible, so we listen afterward to decide which is which.</p></div>
+        </article>
+        <article class="fb-card">
+          <div class="fb-row"><span class="fb-tag conf">Confusion</span><p>“One microphone should be enough.”</p></div>
+          <div class="fb-arrow" aria-hidden="true">→</div>
+          <div class="fb-row"><span class="fb-tag help">How I guided</span><p>We compare one mic with two mics in the demo. Each sound reaches the mics at different strengths, and that difference is the clue.</p></div>
+        </article>
+        <article class="fb-card">
+          <div class="fb-row"><span class="fb-tag conf">Confusion</span><p>“An output came out quieter or upside down.”</p></div>
+          <div class="fb-arrow" aria-hidden="true">→</div>
+          <div class="fb-row"><span class="fb-tag help">How I guided</span><p>ICA finds each sound but not its original volume or sign. That’s why “Which is which?” asks students to name the outputs by ear.</p></div>
+        </article>
+        <article class="fb-card">
+          <div class="fb-row"><span class="fb-tag conf">Confusion</span><p>“The outputs got worse at first.”</p></div>
+          <div class="fb-arrow" aria-hidden="true">→</div>
+          <div class="fb-row"><span class="fb-tag help">How I guided</span><p>We step through the rounds in the analysis lab and watch the independence curve climb.</p></div>
+        </article>
+      </div>
+      <details class="behind" id="training">
+        <summary>Behind the scenes: the code and how the model trains</summary>
+
       <p>These are real outputs from one run of FastICA (the version of ICA on this page) on the three demo sounds, with the default mix from step 2 and the same starting point as the first press of “Separate”. The figures come from <code>tools/make_figures.py</code>, a numpy copy of the code in <code>ica.js</code>. I checked that both take the same 7 rounds and print the same numbers. The matches come out near 1.00 because the computer mixes the sounds perfectly in sync, with no echo.</p>
 
       <div class="doc-grid">
@@ -355,6 +418,7 @@ visualizer default (Kitchen+Classroom, 2x2) det=0.630 rounds=3 out1=Kitchen |r|=
 
 ALL PASS (pass = every output matches a different source with |r| &gt; 0.95)</pre>
       </div>
+          </details>
     </section>
 
     <div class="row">
@@ -378,7 +442,6 @@ ALL PASS (pass = every output matches a different source with |r| &gt; 0.95)</pr
     </section>
     </div>
 
-    <div class="row">
     <section class="box" id="challenges">
       <h2>Challenges &amp; how I solved them</h2>
       <h3>Starting from zero</h3>
@@ -386,12 +449,6 @@ ALL PASS (pass = every output matches a different source with |r| &gt; 0.95)</pr
       <p class="placeholder">[Lucy to fill in: how I addressed this]</p>
       <p class="placeholder">[More challenges to be added]</p>
     </section>
-
-    <section class="box" id="learners">
-      <h2>What I saw with learners</h2>
-      <p class="placeholder">[Results with learners to be added]</p>
-    </section>
-    </div>
 
     <footer class="site-footer box">
       <h2>Sound credits</h2>
@@ -401,6 +458,7 @@ ALL PASS (pass = every output matches a different source with |r| &gt; 0.95)</pr
         <li><strong>Hall:</strong> “Koulu-ambience1” (a school hallway in Helsinki) by Suihkuturbiini8k, CC0 1.0. <a href="https://commons.wikimedia.org/wiki/File:Koulu-ambience1.wav">Wikimedia Commons</a>. Excerpt 0:05–0:14.</li>
         <li><strong>Classroom:</strong> <em>The Aesop for Children</em>, section 32 (“The Hare and the Tortoise” and others), read by a LibriVox volunteer, public domain. <a href="https://librivox.org/the-aesop-for-children-by-aesop/">LibriVox</a> · <a href="https://archive.org/download/aesopforchildren_1308_librivox/theaesopforchildren_32_aesop_64kb.mp3">file on archive.org</a>. Excerpt 0:40–0:49.</li>
       </ul>
+      <p class="muted">Student names are pseudonyms.</p>
       <p class="muted">Made by Lucy Lyu. Code: <a href="https://github.com/ChuqingLyu/ica-unmixing-sounds">github.com/ChuqingLyu/ica-unmixing-sounds</a> (MIT).</p>
     </footer>
   </main>
