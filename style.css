@@ -534,3 +534,5 @@ canvas.wave.small { height: 38px; }
   .oms-label { margin-top: 8px; }
   .ed-wave { grid-template-columns: 1fr; gap: 2px; }
 }
+.viz-main { margin-top: 30px; }
+.viz-main .viz-h { margin-top: 0; font-size: clamp(20px, 2.4vw, 26px); }

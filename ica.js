@@ -1471,7 +1471,7 @@ var EXAMPLE_CLIPS = [
       root.dispatchEvent(new Event('resize'));
       setTimeout(function () { if (L.res) labRender(true); if (T.Z) tryUpdate(); }, 200);
     });
-    if (/[?&](autorun=1\b|labround=|vizstep=)/.test(params) || /^#(viz|school|try|lab|game)$/.test(root.location.hash)) d.open = true;
+    if (/[?&](autorun=1\b|labround=)/.test(params) || /^#(school|try|lab|game)$/.test(root.location.hash)) d.open = true;
   }
 
   function init() {

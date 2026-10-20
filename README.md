@@ -42,7 +42,7 @@ URL options: `?autorun=1` presses Separate once the sounds load (and reveals the
 
 ## Sounds
 
-`audio/students/` holds six real student recordings from the summer project (excerpts of up to 30 s, 128 kbps MP3, with spectrogram strips). The demo uses the three openly licensed example sounds below by default (not recorded by students); a toggle switches the full demo to three student recordings (first 9 s of each, mixed digitally). Photos in `images/activity/` have all faces blurred. Each is a 9-second excerpt, mono, 16 kHz, loudness-normalized, 40 kbps MP3. Full details are in `audio/credits.json`.
+`audio/students/` holds six real student recordings from the summer project (excerpts of up to 30 s, 128 kbps MP3, with spectrogram strips). The demo uses the three openly licensed example sounds below by default (not recorded by students); a toggle switches the full demo to three student recordings (first 9 s of each, mixed digitally). Photos in `images/activity/` are shared with consent. Each is a 9-second excerpt, mono, 16 kHz, loudness-normalized, 40 kbps MP3. Full details are in `audio/credits.json`.
 
 | File | Stands in for | Source | Author | License |
 |---|---|---|---|---|
