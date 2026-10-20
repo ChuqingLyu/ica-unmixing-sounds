@@ -295,8 +295,9 @@ pre.log { font-size: 11.5px; max-height: 440px; color: #a9b5c5; }
 .credits li:nth-child(3)::before { background: var(--classroom); box-shadow: 0 0 6px var(--classroom); }
 
 /* scroll-in reveal (only when JS turns it on and motion is OK) */
-.reveal-on .page .box:not(.toc) { opacity: 0; transform: translateY(22px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
-.reveal-on .page .box.in { opacity: 1; transform: none; }
+.reveal-on .reveal { transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+.reveal-on .reveal:not(.in) { opacity: 0; transform: translateY(22px); }
+.reveal-on .reveal.in { opacity: 1; transform: none; }
 
 @media (max-width: 760px) {
   .viz-body { grid-template-columns: 1fr; }

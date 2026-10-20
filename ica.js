@@ -1355,14 +1355,21 @@ var EXAMPLE_CLIPS = [
   }
 
   // ===================== Small page touches =====================
+  // Scroll-in reveal. Only elements this function observes get hidden (class "reveal"), so nothing
+  // can stay invisible because it was missed. A fallback shows everything if the observer never fires.
   function reveals() {
     if (reduceMotion || !('IntersectionObserver' in root)) return;
-    var boxes = document.querySelectorAll('.page > .box:not(.toc)');
-    document.documentElement.classList.add('reveal-on');
+    var boxes = [].slice.call(document.querySelectorAll('.page .box:not(.toc)'));
     var io = new IntersectionObserver(function (es) {
       es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
     }, { rootMargin: '0px 0px -6% 0px', threshold: 0 });
-    [].forEach.call(boxes, function (b) { io.observe(b); });
+    boxes.forEach(function (b) { b.classList.add('reveal'); io.observe(b); });
+    document.documentElement.classList.add('reveal-on');
+    setTimeout(function () { boxes.forEach(function (b) { if (b.getBoundingClientRect().top < root.innerHeight) b.classList.add('in'); }); }, 1500);
+    root.addEventListener('scroll', function () {
+      clearTimeout(reveals.t);
+      reveals.t = setTimeout(function () { boxes.forEach(function (b) { var r = b.getBoundingClientRect(); if (r.top < root.innerHeight && r.bottom > 0) b.classList.add('in'); }); }, 300);
+    }, { passive: true });
   }
 
   // Hand-rolled highlighting for the code and the test log (no libraries).
