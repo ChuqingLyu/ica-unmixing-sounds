@@ -14,9 +14,17 @@ Vanilla JavaScript, no dependencies. Everything runs in the browser.
 
 ## Page structure
 
-Photo hero → About → horizontal showcase strip (photos, student recording cards, submissions; scroll-snap, arrow buttons, mouse drag, touch) → How the activity worked → Why I designed it this way → What is ICA? → **How ICA unmixes sounds** (3-step illustrated story + one before/after listen pair: three student recordings mixed digitally and unmixed by FastICA in the browser) → **Try the full interactive demo** (a closed `<details>` holding everything below; `?autorun=1`, `?labround=N`, `?vizstep=N` open it) → Student feedback ("Confusion → How I helped/guided" cards; code and training figures collapsed) → Is this AI? / Real life → Challenges.
+Based on my original activity design, 《降维看见看不见的》 (ML · PCA / ICA): pull apart sounds that are mixed together, and make dimensionality reduction something you can hear and see.
 
-Student names are pseudonyms. Set `student` (pseudonym) and `location` per entry in `CLASSROOM_CLIPS` in `ica.js`; empty `location` shows "[location — to be added]".
+Photo hero → short intro → four photo-led chapters:
+1. **Recording**: boom-pole mics and headphones; horizontal scroll strip of the six student recordings (player + spectrogram).
+2. **Editing**: Audacity / multitrack editing; waveforms of each recording drawn in the browser.
+3. **Learning**: the 3-step ICA explanation (`X = S·Aᵀ`) and **PCA vs ICA** on the same student mix. PCA = projection onto the principal directions of the centered mix; both are computed live in `ica.js` and shown with their real |r| match scores and Play buttons.
+4. **Demo**: original / mixed / restored players for three student recordings (mixed digitally with the default table, unmixed by FastICA), then the collapsed full interactive demo and the collapsed behind-the-scenes code and figures.
+
+Then: where students got stuck (feedback cards) and the limits (linear instantaneous mixes only; echo/delay and single-mic mono recordings can't be separated this way; need at least as many mics as sounds; order, volume and sign are undetermined).
+
+Student names are pseudonyms. Set `student` and `location` per entry in `CLASSROOM_CLIPS` in `ica.js`.
 
 ## Interactive demo details
 

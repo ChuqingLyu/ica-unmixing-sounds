@@ -1411,23 +1411,57 @@ var EXAMPLE_CLIPS = [
     el.addEventListener('dragstart', function (e) { e.preventDefault(); });
   }
 
-  // Before/after listen pair: three student recordings mixed digitally, then unmixed by FastICA.
-  function beforeAfter() {
+  // Student mix: three student recordings mixed digitally with DEFAULT_MIX, then PCA and FastICA.
+  function cmpBars(R, studs) {   // R = |r| with each original
+    var best = 0; R.forEach(function (v, j) { if (v > R[best]) best = j; });
+    return '<div class="cmp-match">closest: <b style="color:' + colorOf(studs[best]) + '">' + esc(studs[best].label) + '</b> ' + R[best].toFixed(2) + '</div>' +
+      R.map(function (v, j) {
+        return '<div class="mbar"><span>' + esc(studs[j].short) + '</span><div class="mtrack"><div style="width:' + (100 * v).toFixed(1) + '%;background:' + colorOf(studs[j]) + '"></div></div><span>' + v.toFixed(2) + '</span></div>';
+      }).join('');
+  }
+  function studentMix() {
     var studs = clips.filter(function (c) { return c.kind === 'kids' && c.demo; });
-    if (studs.length !== 3 || !$('ba-mix')) { if ($('listen')) $('listen').hidden = true; return; }
+    // editing chapter: waveform of every student recording
+    var ew = $('ed-waves');
+    if (ew) {
+      ew.innerHTML = '';
+      clips.filter(function (c) { return c.kind === 'kids'; }).forEach(function (c, i) {
+        var d = document.createElement('div'); d.className = 'ed-wave';
+        d.innerHTML = '<span style="color:' + colorOf(c) + '">' + esc(c.label) + (c.student ? ' · ' + esc(c.student) : '') + '</span><canvas id="edw' + i + '" class="wave small"></canvas>';
+        ew.appendChild(d); drawWave($('edw' + i), c.x, colorOf(c));
+      });
+    }
+    if (studs.length !== 3 || !$('oms')) { ['pca', 'oms'].forEach(function (id) { if ($(id)) $(id).hidden = true; }); return; }
     var S = studs.map(function (c) { return c.x; }), X = mix(DEFAULT_MIX, S);
     var res = fastICA(X, { maxIter: 200, tol: 1e-6, seed: 1 }), m = matchComponents(res.Y, S);
-    playButton($('ba-mix'), function () { return X[0]; }); $('ba-mix').disabled = false;
-    var box = $('ba-out'); box.innerHTML = '';
-    [0, 1, 2].forEach(function (j) {          // one button per original recording, in order
-      var i = m.findIndex(function (q) { return q.source === j; }), c = studs[j];
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'play';
-      b.style.setProperty('--c', colorOf(c)); b.textContent = c.label;
-      box.appendChild(b); playButton(b, function () { return res.Y[i]; });
-    });
-    $('ba-note').textContent = 'Each output matched one recording: ' + m.map(function (q) { return q.abs.toFixed(2); }).join(', ') +
-      ' (1.00 = perfect), after ' + res.iterations + ' rounds.';
-    root.__baResult = { iterations: res.iterations, match: m };
+    var P = whiten(center(X).Xc).Z;            // PCA: project onto the principal directions (scaled to unit variance)
+    function absR(Y) { return Y.map(function (y) { return S.map(function (x) { return Math.abs(corr(y, x)); }); }); }
+    var RP = absR(P), RI = absR(res.Y);
+    function cell(id, label, color, sig, extra) {
+      var el = $(id); if (!el) return;
+      el.innerHTML = '<div class="oms-cell" style="--c:' + color + '"><button type="button" class="play">' + esc(label) + '</button>' + (extra || '') + '</div>';
+      playButton(el.querySelector('button'), function () { return sig; });
+    }
+    var order = [0, 1, 2].map(function (j) { return m.findIndex(function (q) { return q.source === j; }); });
+    for (var j = 0; j < 3; j++) {
+      cell('oms-o' + j, studs[j].label + (studs[j].student ? ' · ' + studs[j].student : ''), colorOf(studs[j]), S[j]);
+      cell('oms-m' + j, MICS[j], COLORS.mix, X[j]);
+      var i = order[j];
+      cell('oms-r' + j, 'Output ' + (i + 1), colorOf(studs[j]), res.Y[i], '<span class="oms-r">matches ' + esc(studs[j].label) + ': ' + m[i].abs.toFixed(2) + '</span>');
+    }
+    $('oms-note').textContent = 'FastICA stopped after ' + res.iterations + ' rounds. A match of 1.00 means the output has the same shape as the original.';
+    function list(id, Y, R, name) {
+      var box = $(id); box.innerHTML = '';
+      Y.forEach(function (y, k) {
+        var d = document.createElement('div'); d.className = 'cmp-item';
+        d.innerHTML = '<button type="button" class="play">' + name + ' ' + (k + 1) + '</button>' + cmpBars(R[k], studs);
+        box.appendChild(d); playButton(d.querySelector('button'), function () { return y; });
+      });
+    }
+    list('pca-out', P, RP, 'PCA'); list('ica-cmp-out', res.Y, RI, 'ICA');
+    function avgBest(R) { var t = 0; R.forEach(function (r) { t += Math.max.apply(null, r); }); return t / R.length; }
+    $('pca-note').textContent = 'Average closest match: PCA ' + avgBest(RP).toFixed(2) + ', ICA ' + avgBest(RI).toFixed(2) + ' (1.00 = one clean recording).';
+    root.__pcaIca = { pca: RP, ica: RI, iterations: res.iterations };
   }
   // The full demo sits in a closed <details>; redraw canvases when it opens. URL params open it.
   function demoDetails() {
@@ -1462,7 +1496,7 @@ var EXAMPLE_CLIPS = [
         document.body.setAttribute('data-sounds', 'loaded');
         vizInit();
         demoInit();
-        beforeAfter();
+        studentMix();
         demoDetails();
         if (/[?&](autorun=1\b|labround=)/.test(params)) separate();
       })
